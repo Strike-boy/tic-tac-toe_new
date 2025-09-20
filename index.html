@@ -47,9 +47,13 @@
       <!-- левый — поле и статус -->
       <div class="left panel">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="small">Режим: <span id="modeLabel">Локально</span></div>
-          <div class="small">Твой ник: <strong id="myNameDisplay">Гость</strong></div>
-        </div>
+  <div class="small">Режим: <span id="modeLabel">Локально</span></div>
+  <div class="small">
+    Ты: <strong id="myNameDisplay">Гость</strong><br>
+    Соперник: <strong id="opponentNameDisplay">—</strong>
+  </div>
+</div>
+
 
         <div class="board" id="board">
           <!-- 9 клеток -->
@@ -148,6 +152,7 @@ const joinRoomBtn = document.getElementById('joinRoomBtn');
 const joinMsg = document.getElementById('joinMsg');
 const onlineInfo = document.getElementById('onlineInfo');
 const myNameDisplay = document.getElementById('myNameDisplay');
+const opponentNameDisplay = document.getElementById('opponentNameDisplay');
 const localNameInput = document.getElementById('localName');
 const onlineNameInput = document.getElementById('onlineName');
 const resetAllBtn = document.getElementById('resetAll');
@@ -279,32 +284,48 @@ function connectWS(code, name){
       return;
     }
     if(msg.type === 'ready'){
-      // both players connected
-      online.active = true;
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.mySymbol = msg.your_symbol;
-      online.opponent = msg.opponent;
-      onlineInfo.textContent = `Игра началась. Твой символ: ${online.mySymbol}`;
-      myNameDisplay.textContent = name || 'Игрок';
-      renderOnlineState();
-      return;
+  // оба игрока подключены
+  online.active = true;
+  online.board = msg.board;
+  online.turn = msg.turn;
+  online.mySymbol = msg.your_symbol;
+  online.opponent = msg.opponent;
+
+  myNameDisplay.textContent = name || 'Игрок';
+  opponentNameDisplay.textContent = online.opponent || '—';
+
+  onlineInfo.textContent = `Игра началась. Твой символ: ${online.mySymbol}`;
+  renderOnlineState();
+  return;
+}
+
+if(msg.type === 'state'){
+  online.board = msg.board;
+  online.turn = msg.turn;
+
+  if(msg.opponent){
+    online.opponent = msg.opponent;
+    opponentNameDisplay.textContent = online.opponent || '—';
+  }
+
+  renderOnlineState();
+
+  if(msg.winner){
+    if(msg.winner === 'D'){ 
+      statusEl.textContent = 'Ничья!'; 
+      scores.T++; 
+    } else { 
+      statusEl.textContent = `Победил ${msg.winner==='X'?'❌':'⭕'}!`; 
+      scores[msg.winner]++; 
     }
-    if(msg.type === 'state'){
-      online.board = msg.board;
-      online.turn = msg.turn;
-      renderOnlineState();
-      if(msg.winner){
-        if(msg.winner === 'D'){ statusEl.textContent = 'Ничья!'; scores.T++; }
-        else { statusEl.textContent = `Победил ${msg.winner==='X'?'❌':'⭕'}!`; scores[msg.winner]++; }
-        updateScores();
-        online.active = false;
-        // disable clicks visually
-      } else {
-        statusEl.textContent = `Ход: ${msg.turn==='X'?'❌':'⭕'}`;
-      }
-      return;
-    }
+    updateScores();
+    online.active = false;
+  } else {
+    statusEl.textContent = `Ход: ${msg.turn==='X'?'❌':'⭕'}`;
+  }
+  return;
+}
+
     if(msg.type === 'opponent_left'){
       onlineInfo.textContent = 'Соперник отсоединился. Ожидаем нового...';
     }
@@ -365,7 +386,17 @@ joinRoomBtn.onclick = ()=>{
   roomCodeInput.value = code;
 };
 
-resetAllBtn.onclick = ()=>{ scores = {X:0,O:0,T:0}; updateScores(); resetBoard(); if(online.ws){ online.ws.close(); online.ws=null; } }
+resetAllBtn.onclick = () => {
+    if (online.ws) {
+        // если мы в онлайне – отправляем серверу команду сброса
+        online.ws.send(JSON.stringify({ type: "resetAll" }));
+    } else {
+        // оффлайн-режим: сбрасываем локально
+        scores = { X: 0, O: 0, T: 0 };
+        updateScores();
+        resetBoard();
+    }
+};
 
 /* ====== инициализация страницы ====== */
 setMode('local');
