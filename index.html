@@ -40,6 +40,7 @@
       <div><div class="title">🎮 Крестики-Нолики — локально / онлайн</div><div class="small">Играй с другом в другом городе — создавай комнату и передавай код</div></div>
       <div class="controls">
         <button id="resetAll" class="btn secondary">🔄 Новая игра</button>
+        <button id="restartBtn" class="btn secondary">🔄 Рестарт</button>
       </div>
     </div>
 
@@ -47,13 +48,12 @@
       <!-- левый — поле и статус -->
       <div class="left panel">
         <div style="display:flex;align-items:center;justify-content:space-between">
-  <div class="small">Режим: <span id="modeLabel">Локально</span></div>
-  <div class="small">
-    Ты: <strong id="myNameDisplay">Гость</strong><br>
-    Соперник: <strong id="opponentNameDisplay">—</strong>
-  </div>
-</div>
-
+          <div class="small">Режим: <span id="modeLabel">Локально</span></div>
+          <div class="small">
+            Ты: <strong id="myNameDisplay">Гость</strong><br>
+            Соперник: <strong id="opponentNameDisplay">—</strong>
+          </div>
+        </div>
 
         <div class="board" id="board">
           <!-- 9 клеток -->
@@ -156,6 +156,7 @@ const opponentNameDisplay = document.getElementById('opponentNameDisplay');
 const localNameInput = document.getElementById('localName');
 const onlineNameInput = document.getElementById('onlineName');
 const resetAllBtn = document.getElementById('resetAll');
+const restartBtn = document.getElementById('restartBtn');
 const scoreX = document.getElementById('scoreX'), scoreO = document.getElementById('scoreO'), scoreT = document.getElementById('scoreT');
 
 let mode = 'local'; // 'local' или 'online'
@@ -262,8 +263,6 @@ function connectWS(code, name){
   onlineInfo.textContent = 'Соединяюсь...';
   ws.onopen = ()=> {
     onlineInfo.textContent = 'Ожидание соперника...';
-    // tell server our name
-    ws.send(JSON.stringify({type:'join', name:name}));
   };
   ws.onmessage = (ev)=>{
     const msg = JSON.parse(ev.data);
@@ -284,48 +283,55 @@ function connectWS(code, name){
       return;
     }
     if(msg.type === 'ready'){
-  // оба игрока подключены
-  online.active = true;
-  online.board = msg.board;
-  online.turn = msg.turn;
-  online.mySymbol = msg.your_symbol;
-  online.opponent = msg.opponent;
+      // оба игрока подключены
+      online.active = true;
+      online.board = msg.board;
+      online.turn = msg.turn;
+      online.mySymbol = msg.your_symbol;
+      online.opponent = msg.opponent;
 
-  myNameDisplay.textContent = name || 'Игрок';
-  opponentNameDisplay.textContent = online.opponent || '—';
+      myNameDisplay.textContent = name || 'Игрок';
+      opponentNameDisplay.textContent = online.opponent || '—';
 
-  onlineInfo.textContent = `Игра началась. Твой символ: ${online.mySymbol}`;
-  renderOnlineState();
-  return;
-}
-
-if(msg.type === 'state'){
-  online.board = msg.board;
-  online.turn = msg.turn;
-
-  if(msg.opponent){
-    online.opponent = msg.opponent;
-    opponentNameDisplay.textContent = online.opponent || '—';
-  }
-
-  renderOnlineState();
-
-  if(msg.winner){
-    if(msg.winner === 'D'){ 
-      statusEl.textContent = 'Ничья!'; 
-      scores.T++; 
-    } else { 
-      statusEl.textContent = `Победил ${msg.winner==='X'?'❌':'⭕'}!`; 
-      scores[msg.winner]++; 
+      onlineInfo.textContent = `Игра началась. Твой символ: ${online.mySymbol}`;
+      renderOnlineState();
+      return;
     }
-    updateScores();
-    online.active = false;
-  } else {
-    statusEl.textContent = `Ход: ${msg.turn==='X'?'❌':'⭕'}`;
-  }
-  return;
-}
+    if(msg.type === 'state'){
+      online.board = msg.board;
+      online.turn = msg.turn;
 
+      if(msg.opponent){
+        online.opponent = msg.opponent;
+        opponentNameDisplay.textContent = online.opponent || '—';
+      }
+
+      renderOnlineState();
+
+      if(msg.winner){
+        if(msg.winner === 'D'){ 
+          statusEl.textContent = 'Ничья!'; 
+          scores.T++; 
+        } else { 
+          statusEl.textContent = `Победил ${msg.winner==='X'?'❌':'⭕'}!`; 
+          scores[msg.winner]++; 
+        }
+        updateScores();
+        online.active = false;
+      } else {
+        statusEl.textContent = `Ход: ${msg.turn==='X'?'❌':'⭕'}`;
+      }
+      return;
+    }
+    if(msg.type === 'rematch_start'){
+      // сервер начал реванш
+      online.board = msg.board;
+      online.turn = msg.turn;
+      online.active = true;
+      renderOnlineState();
+      statusEl.textContent = `Реванш! Ход: ${msg.turn==='X'?'❌':'⭕'}`;
+      return;
+    }
     if(msg.type === 'opponent_left'){
       onlineInfo.textContent = 'Соперник отсоединился. Ожидаем нового...';
     }
@@ -385,13 +391,9 @@ joinRoomBtn.onclick = ()=>{
   createPanel.classList.add('hidden'); joinPanel.classList.remove('hidden');
   roomCodeInput.value = code;
 };
-  
-<button id="resetAllBtn">Сбросить всё</button>
-<button id="restartBtn">🔄 Рестарт</button>
 
-<script>
+// Новая игра (полный сброс)
 resetAllBtn.onclick = () => {
-  // общий сброс очков + доски
   scores = { X: 0, O: 0, T: 0 };
   updateScores();
   resetBoard();
@@ -403,23 +405,15 @@ resetAllBtn.onclick = () => {
   }
 };
 
+// Рестарт игры (только доска)
 restartBtn.onclick = () => {
-  // рестарт онлайн-игры (шлём серверу команду)
-  if (mode === 'online' && online.ws && online.active !== null) {
-    online.ws.send(JSON.stringify({ type: 'restart' }));
-  }
-  resetBoard();
-};
-
-// обработка сообщений от сервера
-function handleWSMessage(msg) {
-  if (msg.type === 'restart') {
+  if (mode === 'local') {
     resetBoard();
-    statusEl.textContent = 'Игра началась заново!';
+  } else if (mode === 'online' && online.ws && online.active !== null) {
+    // Отправляем запрос на реванш серверу
+    online.ws.send(JSON.stringify({ type: 'rematch' }));
   }
-
-  // оставь тут все остальные твои if(msg.type === 'state' / 'ready')
-}
+};
 
 /* ====== инициализация страницы ====== */
 setMode('local');
@@ -428,4 +422,3 @@ updateScores();
 </script>
 </body>
 </html>
-
