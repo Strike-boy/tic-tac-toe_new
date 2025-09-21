@@ -385,37 +385,40 @@ joinRoomBtn.onclick = ()=>{
   createPanel.classList.add('hidden'); joinPanel.classList.remove('hidden');
   roomCodeInput.value = code;
 };
-
+  
 <button id="resetAllBtn">Сбросить всё</button>
 <button id="restartBtn">🔄 Рестарт</button>
 
 <script>
 resetAllBtn.onclick = () => {
-    if (online.ws) {
-        // если мы в онлайне – отправляем серверу команду сброса
-        online.ws.send(JSON.stringify({ type: "resetAll" }));
-    } else {
-        // оффлайн-режим: сбрасываем локально
-        scores = { X: 0, O: 0, T: 0 };
-        updateScores();
-        resetBoard();
-    }
+  // общий сброс очков + доски
+  scores = { X: 0, O: 0, T: 0 };
+  updateScores();
+  resetBoard();
+
+  // если мы в онлайне – отключаемся от сервера
+  if (mode === 'online' && online.ws) {
+    online.ws.close();
+    online.ws = null;
+  }
 };
 
 restartBtn.onclick = () => {
-    if (mode === 'online' && online.ws && online.active !== null) {
-        online.ws.send(JSON.stringify({ type: 'restart' }));
-    }
-    resetBoard();
+  // рестарт онлайн-игры (шлём серверу команду)
+  if (mode === 'online' && online.ws && online.active !== null) {
+    online.ws.send(JSON.stringify({ type: 'restart' }));
+  }
+  resetBoard();
 };
 
 // обработка сообщений от сервера
 function handleWSMessage(msg) {
-    if (msg.type === 'restart') {
-        resetBoard();
-        statusEl.textContent = 'Игра началась заново!';
-    }
-    // оставь тут все остальные твои if(msg.type === 'state' / 'ready')
+  if (msg.type === 'restart') {
+    resetBoard();
+    statusEl.textContent = 'Игра началась заново!';
+  }
+
+  // оставь тут все остальные твои if(msg.type === 'state' / 'ready')
 }
 
 /* ====== инициализация страницы ====== */
@@ -425,3 +428,4 @@ updateScores();
 </script>
 </body>
 </html>
+
