@@ -386,6 +386,10 @@ joinRoomBtn.onclick = ()=>{
   roomCodeInput.value = code;
 };
 
+<button id="resetAllBtn">Сбросить всё</button>
+<button id="restartBtn">🔄 Рестарт</button>
+
+<script>
 resetAllBtn.onclick = () => {
     if (online.ws) {
         // если мы в онлайне – отправляем серверу команду сброса
@@ -398,11 +402,26 @@ resetAllBtn.onclick = () => {
     }
 };
 
+restartBtn.onclick = () => {
+    if (mode === 'online' && online.ws && online.active !== null) {
+        online.ws.send(JSON.stringify({ type: 'restart' }));
+    }
+    resetBoard();
+};
+
+// обработка сообщений от сервера
+function handleWSMessage(msg) {
+    if (msg.type === 'restart') {
+        resetBoard();
+        statusEl.textContent = 'Игра началась заново!';
+    }
+    // оставь тут все остальные твои if(msg.type === 'state' / 'ready')
+}
+
 /* ====== инициализация страницы ====== */
 setMode('local');
 resetBoard();
 updateScores();
-
 </script>
 </body>
 </html>
