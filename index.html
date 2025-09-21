@@ -528,465 +528,430 @@
     </div>
   </div>
 
-    <script>
+<script>
 /* ====== НАСТРОЙКИ ====== */
-const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com"; // ЗАМЕНИ на свой URL
+const BACKEND_BASE = "https://your-backend-url.onrender.com"; // ЗАМЕНИ НА СВОЙ URL
 
 /* ====== UI Elements ====== */
-const boardEls = [...document.querySelectorAll('.cell')];
-const statusEl = document.getElementById('status');
-const timerEl = document.getElementById('timer');
-const modeLabel = document.getElementById('modeLabel');
-const btnLocal = document.getElementById('btnLocal');
-const btnOnline = document.getElementById('btnOnline');
-const localPanel = document.getElementById('localPanel');
-const onlinePanel = document.getElementById('onlinePanel');
-const createBtn = document.getElementById('createBtn');
-const joinBtn = document.getElementById('joinBtn');
-const createPanel = document.getElementById('createPanel');
-const joinPanel = document.getElementById('joinPanel');
-const roomCodeInput = document.getElementById('roomCode');
-const copyCodeBtn = document.getElementById('copyCode');
-const joinCodeInput = document.getElementById('joinCodeInput');
-const joinRoomBtn = document.getElementById('joinRoomBtn');
-const joinMsg = document.getElementById('joinMsg');
-const onlineInfo = document.getElementById('onlineInfo');
-const myNameDisplay = document.getElementById('myNameDisplay');
-const opponentNameDisplay = document.getElementById('opponentNameDisplay');
-const localNameInput = document.getElementById('localName');
-const onlineNameInput = document.getElementById('onlineName');
-const resetAllBtn = document.getElementById('resetAll');
-const restartBtn = document.getElementById('restartBtn');
-const scoreX = document.getElementById('scoreX');
-const scoreO = document.getElementById('scoreO');
-const scoreT = document.getElementById('scoreT');
-const btnVsAI = document.getElementById('btnVsAI');
-const chatMessages = document.getElementById('chatMessages');
-const chatInput = document.getElementById('chatInput');
-const sendChatBtn = document.getElementById('sendChatBtn');
+const elements = {
+    board: document.getElementById('board'),
+    status: document.getElementById('status'),
+    timer: document.getElementById('timer'),
+    modeLabel: document.getElementById('modeLabel'),
+    btnLocal: document.getElementById('btnLocal'),
+    btnOnline: document.getElementById('btnOnline'),
+    localPanel: document.getElementById('localPanel'),
+    onlinePanel: document.getElementById('onlinePanel'),
+    createBtn: document.getElementById('createBtn'),
+    joinBtn: document.getElementById('joinBtn'),
+    createPanel: document.getElementById('createPanel'),
+    joinPanel: document.getElementById('joinPanel'),
+    roomCode: document.getElementById('roomCode'),
+    copyCode: document.getElementById('copyCode'),
+    joinCodeInput: document.getElementById('joinCodeInput'),
+    joinRoomBtn: document.getElementById('joinRoomBtn'),
+    joinMsg: document.getElementById('joinMsg'),
+    onlineInfo: document.getElementById('onlineInfo'),
+    myNameDisplay: document.getElementById('myNameDisplay'),
+    opponentNameDisplay: document.getElementById('opponentNameDisplay'),
+    localName: document.getElementById('localName'),
+    onlineName: document.getElementById('onlineName'),
+    resetAll: document.getElementById('resetAll'),
+    restartBtn: document.getElementById('restartBtn'),
+    scoreX: document.getElementById('scoreX'),
+    scoreO: document.getElementById('scoreO'),
+    scoreT: document.getElementById('scoreT'),
+    btnVsAI: document.getElementById('btnVsAI'),
+    chatMessages: document.getElementById('chatMessages'),
+    chatInput: document.getElementById('chatInput'),
+    sendChatBtn: document.getElementById('sendChatBtn')
+};
 
 /* ====== Game State ====== */
-let mode = 'local';
-let localGame = { board: Array(9).fill(''), turn: 'X', active: true };
-let online = { 
-  ws: null, code: null, mySymbol: null, 
-  board: Array(9).fill(''), turn: 'X', 
-  active: false, opponent: null, 
-  timer: null, timeLeft: 30 
+let gameState = {
+    mode: 'local',
+    localGame: { board: Array(9).fill(''), turn: 'X', active: true },
+    online: { 
+        ws: null, code: null, mySymbol: null, 
+        board: Array(9).fill(''), turn: 'X', 
+        active: false, opponent: null, 
+        timer: null, timeLeft: 30 
+    },
+    scores: { X: 0, O: 0, T: 0 },
+    isPlayingWithAI: false
 };
-let scores = { X: 0, O: 0, T: 0 };
-let gameSize = 3; // 3x3 по умолчанию
-let isPlayingWithAI = false;
 
-/* ====== Timer Functions ====== */
-function startTimer() {
-  if (online.timer) clearInterval(online.timer);
-  
-  online.timeLeft = 30;
-  timerEl.textContent = online.timeLeft;
-  
-  online.timer = setInterval(() => {
-    online.timeLeft--;
-    timerEl.textContent = online.timeLeft;
+/* ====== Initialize Game ====== */
+function initGame() {
+    console.log("Initializing game...");
     
-    if (online.timeLeft <= 0) {
-      clearInterval(online.timer);
-      if (online.active && online.turn === online.mySymbol) {
-        // Автоматический ход при тайм-ауте
-        makeAIMove();
-      }
-    }
-  }, 1000);
+    // Add event listeners
+    elements.btnLocal.addEventListener('click', () => setMode('local'));
+    elements.btnOnline.addEventListener('click', () => setMode('online'));
+    elements.createBtn.addEventListener('click', createRoom);
+    elements.joinBtn.addEventListener('click', toggleJoinPanel);
+    elements.joinRoomBtn.addEventListener('click', joinRoom);
+    elements.copyCode.addEventListener('click', copyRoomCode);
+    elements.resetAll.addEventListener('click', resetAll);
+    elements.restartBtn.addEventListener('click', restartGame);
+    elements.btnVsAI.addEventListener('click', startVsAI);
+    elements.sendChatBtn.addEventListener('click', sendChat);
+    elements.chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    // Add cell click listeners
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        cell.addEventListener('click', () => onCellClick(index));
+    });
+
+    // Initialize UI
+    setMode('local');
+    resetBoard();
+    updateScores();
+    
+    console.log("Game initialized successfully!");
 }
 
-function stopTimer() {
-  if (online.timer) {
-    clearInterval(online.timer);
-    online.timer = null;
-  }
-}
-
-/* ====== AI Logic ====== */
-function makeAIMove() {
-  if (!localGame.active || !isPlayingWithAI || localGame.turn !== 'O') return;
-  
-  // Простой ИИ: случайный ход
-  const emptyCells = localGame.board
-    .map((cell, index) => cell === '' ? index : null)
-    .filter(index => index !== null);
-  
-  if (emptyCells.length > 0) {
-    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    setTimeout(() => {
-      onCellClick(randomIndex);
-    }, 1000);
-  }
-}
-
-/* ====== Chat Functions ====== */
-function addChatMessage(sender, message) {
-  const messageEl = document.createElement('div');
-  messageEl.innerHTML = `<strong>${sender}:</strong> ${message}`;
-  messageEl.style.marginBottom = '5px';
-  chatMessages.appendChild(messageEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-/* ====== Win Line Animation ====== */
-function showWinLine(winningCombo) {
-  winningCombo.forEach(index => {
-    boardEls[index].classList.add('winner');
-  });
-}
-
-/* ====== Emoji Reactions ====== */
-function showEmojiReaction(emoji) {
-  const emojiEl = document.createElement('div');
-  emojiEl.className = 'emoji-reaction';
-  emojiEl.textContent = emoji;
-  emojiEl.style.left = Math.random() * 300 + 'px';
-  document.body.appendChild(emojiEl);
-  
-  setTimeout(() => {
-    emojiEl.remove();
-  }, 2000);
-}
-
-/* ====== Game Core Functions ====== */
-function setMode(m) {
-  mode = m;
-  modeLabel.textContent = m === 'local' ? 'Локально' : 'Онлайн';
-  localPanel.classList.toggle('hidden', m !== 'local');
-  onlinePanel.classList.toggle('hidden', m !== 'online');
-  resetBoard();
+/* ====== Core Game Functions ====== */
+function setMode(mode) {
+    gameState.mode = mode;
+    elements.modeLabel.textContent = mode === 'local' ? 'Локально' : 'Онлайн';
+    elements.localPanel.classList.toggle('hidden', mode !== 'local');
+    elements.onlinePanel.classList.toggle('hidden', mode !== 'online');
+    resetBoard();
 }
 
 function resetBoard() {
-  localGame.board = Array(9).fill('');
-  localGame.turn = 'X';
-  localGame.active = true;
-  
-  online.active = false;
-  onlineInfo.textContent = '';
-  roomCodeInput.value = '';
-  createPanel.classList.add('hidden');
-  joinPanel.classList.add('hidden');
-  joinMsg.textContent = '';
-  stopTimer();
-  
-  myNameDisplay.textContent = mode === 'local' ? 
-    (localNameInput.value || 'Неоновый воин') : 
-    (onlineNameInput.value || 'Неоновый воин');
-  
-  boardEls.forEach((cell, i) => {
-    cell.textContent = '';
-    cell.className = 'cell';
-    cell.dataset.index = i;
-  });
-  
-  statusEl.textContent = `Ход: ${localGame.turn === 'X' ? '❌' : '⭕'}`;
-  timerEl.textContent = '30';
-}
-
-function checkWin(board) {
-  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  
-  for (const [a, b, c] of wins) {
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return { winner: board[a], combo: [a, b, c] };
-    }
-  }
-  
-  if (!board.includes('')) return { winner: 'D', combo: [] };
-  return null;
-}
-
-boardEls.forEach((cell, idx) => {
-  cell.addEventListener('click', () => onCellClick(idx));
-});
-
-function onCellClick(i) {
-  if (mode === 'local') {
-    if (!localGame.active) return;
-    if (localGame.board[i]) return;
+    gameState.localGame.board = Array(9).fill('');
+    gameState.localGame.turn = 'X';
+    gameState.localGame.active = true;
     
-    localGame.board[i] = localGame.turn;
+    gameState.online.active = false;
+    elements.onlineInfo.textContent = '';
+    elements.roomCode.value = '';
+    elements.createPanel.classList.add('hidden');
+    elements.joinPanel.classList.add('hidden');
+    elements.joinMsg.textContent = '';
+    stopTimer();
+    
+    const playerName = gameState.mode === 'local' ? 
+        (elements.localName.value || 'Неоновый воин') : 
+        (elements.onlineName.value || 'Неоновый воин');
+    
+    elements.myNameDisplay.textContent = playerName;
+    
+    // Clear board
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, i) => {
+        cell.textContent = '';
+        cell.className = 'cell';
+        cell.dataset.index = i;
+    });
+    
+    elements.status.textContent = `Ход: ${gameState.localGame.turn === 'X' ? '❌' : '⭕'}`;
+    elements.timer.textContent = '30';
+}
+
+function onCellClick(index) {
+    console.log("Cell clicked:", index);
+    
+    if (gameState.mode === 'local') {
+        handleLocalMove(index);
+    } else {
+        handleOnlineMove(index);
+    }
+}
+
+function handleLocalMove(index) {
+    if (!gameState.localGame.active) return;
+    if (gameState.localGame.board[index]) return;
+    
+    gameState.localGame.board[index] = gameState.localGame.turn;
     renderBoard();
     
-    const result = checkWin(localGame.board);
-    if (result) {
-      localGame.active = false;
-      
-      if (result.winner === 'D') {
-        statusEl.textContent = 'Ничья 🤝';
-        scores.T++;
-        showEmojiReaction('🤝');
-      } else {
-        statusEl.textContent = `Победил ${result.winner === 'X' ? '❌' : '⭕'}!`;
-        scores[result.winner]++;
-        showWinLine(result.combo);
-        showEmojiReaction(result.winner === 'X' ? '🎉' : '🔥');
-      }
-      
-      updateScores();
-      return;
+    const result = checkWin(gameState.localGame.board);
+    if (result && result.winner) {
+        gameState.localGame.active = false;
+        handleGameEnd(result);
+    } else {
+        gameState.localGame.turn = gameState.localGame.turn === 'X' ? 'O' : 'X';
+        elements.status.textContent = `Ход: ${gameState.localGame.turn === 'X' ? '❌' : '⭕'}`;
+        
+        if (gameState.isPlayingWithAI && gameState.localGame.turn === 'O') {
+            setTimeout(() => makeAIMove(), 500);
+        }
     }
-    
-    localGame.turn = localGame.turn === 'X' ? 'O' : 'X';
-    statusEl.textContent = `Ход: ${localGame.turn === 'X' ? '❌' : '⭕'}`;
-    
-    if (isPlayingWithAI && localGame.turn === 'O') {
-      makeAIMove();
+}
+
+function handleOnlineMove(index) {
+    if (!gameState.online.active) {
+        alert('Сначала создай или присоединись к комнате.');
+        return;
     }
+    if (gameState.online.turn !== gameState.online.mySymbol) return;
+    if (gameState.online.board[index]) return;
     
-  } else {
-    if (!online.active) {
-      alert('Сначала создай или присоединись к комнате.');
-      return;
-    }
-    if (online.turn !== online.mySymbol) return;
-    if (online.board[i]) return;
-    
-    const msg = { type: 'move', index: i };
-    online.ws.send(JSON.stringify(msg));
+    const msg = { type: 'move', index: index };
+    gameState.online.ws.send(JSON.stringify(msg));
     stopTimer();
-  }
 }
 
-function renderBoard() {
-  const board = mode === 'local' ? localGame.board : online.board;
-  
-  board.forEach((value, i) => {
-    boardEls[i].textContent = value ? (value === 'X' ? '❌' : '⭕') : '';
-    boardEls[i].classList.toggle('x', value === 'X');
-    boardEls[i].classList.toggle('o', value === 'O');
-  });
+/* ====== AI Functions ====== */
+function startVsAI() {
+    gameState.isPlayingWithAI = true;
+    resetBoard();
+    const name = elements.localName.value || 'Неоновый воин';
+    elements.myNameDisplay.textContent = name;
+    elements.opponentNameDisplay.textContent = '🤖 ИИ';
 }
 
-function updateScores() {
-  scoreX.textContent = scores.X;
-  scoreO.textContent = scores.O;
-  scoreT.textContent = scores.T;
+function makeAIMove() {
+    if (!gameState.localGame.active || !gameState.isPlayingWithAI || gameState.localGame.turn !== 'O') return;
+    
+    const emptyCells = gameState.localGame.board
+        .map((cell, index) => cell === '' ? index : null)
+        .filter(index => index !== null);
+    
+    if (emptyCells.length > 0) {
+        const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        onCellClick(randomIndex);
+    }
 }
 
 /* ====== Online Functions ====== */
+async function createRoom() {
+    const name = elements.onlineName.value.trim() || 'Неоновый воин';
+    const code = await apiCreate();
+    if (!code) return;
+    
+    elements.roomCode.value = code;
+    connectWS(code, name);
+    elements.createPanel.classList.remove('hidden');
+    elements.joinPanel.classList.add('hidden');
+}
+
 async function apiCreate() {
-  const url = BACKEND_BASE + '/create';
-  try {
-    const response = await fetch(url, { method: 'POST' });
-    const data = await response.json();
-    return data.code;
-  } catch (error) {
-    console.error('Ошибка создания комнаты:', error);
-    alert('Ошибка создания комнаты. Проверь бэкенд.');
-    return null;
-  }
+    try {
+        const response = await fetch(BACKEND_BASE + '/create', { method: 'POST' });
+        const data = await response.json();
+        return data.code;
+    } catch (error) {
+        console.error('Create error:', error);
+        alert('Ошибка создания комнаты');
+        return null;
+    }
 }
 
 function connectWS(code, name) {
-  if (!BACKEND_BASE) {
-    alert('Задай BACKEND_BASE в настройках');
-    return;
-  }
-  
-  const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name || 'Игрок')}`;
-  
-  online.ws = new WebSocket(wsUrl);
-  online.code = code;
-  onlineInfo.textContent = 'Соединяюсь...';
-  
-  online.ws.onopen = () => {
-    onlineInfo.textContent = 'Ожидание соперника...';
-  };
-  
-  online.ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    handleOnlineMessage(message);
-  };
-  
-  online.ws.onclose = () => {
-    onlineInfo.textContent = 'Соединение закрыто';
-    online.active = false;
-    stopTimer();
-  };
-  
-  online.ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    onlineInfo.textContent = 'Ошибка соединения';
-  };
+    const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name)}`;
+    
+    gameState.online.ws = new WebSocket(wsUrl);
+    gameState.online.code = code;
+    elements.onlineInfo.textContent = 'Соединяюсь...';
+    
+    gameState.online.ws.onopen = () => {
+        elements.onlineInfo.textContent = 'Ожидание соперника...';
+    };
+    
+    gameState.online.ws.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            handleOnlineMessage(message);
+        } catch (error) {
+            console.error('Message parse error:', error);
+        }
+    };
+    
+    gameState.online.ws.onclose = () => {
+        elements.onlineInfo.textContent = 'Соединение закрыто';
+        gameState.online.active = false;
+        stopTimer();
+    };
+    
+    gameState.online.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        elements.onlineInfo.textContent = 'Ошибка соединения';
+    };
 }
 
 function handleOnlineMessage(msg) {
-  switch (msg.type) {
-    case 'error':
-      alert(msg.msg);
-      onlineInfo.textContent = msg.msg;
-      online.ws.close();
-      break;
-      
-    case 'waiting':
-      onlineInfo.textContent = 'Комната создана, ждём соперника...';
-      roomCodeInput.value = online.code;
-      createPanel.classList.remove('hidden');
-      joinPanel.classList.add('hidden');
-      online.active = true;
-      online.mySymbol = msg.your_symbol;
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.opponent = msg.opponent;
-      myNameDisplay.textContent = onlineNameInput.value || 'Игрок';
-      renderBoard();
-      break;
-      
-    case 'ready':
-      online.active = true;
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.mySymbol = msg.your_symbol;
-      online.opponent = msg.opponent;
-      myNameDisplay.textContent = onlineNameInput.value || 'Игрок';
-      opponentNameDisplay.textContent = online.opponent || '—';
-      onlineInfo.textContent = `Игра началась! Ты играешь ${online.mySymbol}`;
-      renderBoard();
-      statusEl.textContent = `Ход: ${online.turn === 'X' ? '❌' : '⭕'}`;
-      
-      if (online.turn === online.mySymbol) {
-        startTimer();
-      }
-      break;
-      
-    case 'state':
-      online.board = msg.board;
-      online.turn = msg.turn;
-      renderBoard();
-      
-      if (msg.winner) {
-        if (msg.winner === 'D') {
-          statusEl.textContent = 'Ничья!';
-          scores.T++;
-          showEmojiReaction('🤝');
-        } else {
-          statusEl.textContent = `Победил ${msg.winner === 'X' ? '❌' : '⭕'}!`;
-          scores[msg.winner]++;
-          showEmojiReaction(msg.winner === online.mySymbol ? '🎉' : '😢');
-        }
-        updateScores();
-        online.active = false;
-        stopTimer();
-      } else {
-        statusEl.textContent = `Ход: ${msg.turn === 'X' ? '❌' : '⭕'}`;
-        
-        if (msg.turn === online.mySymbol) {
-          startTimer();
-        } else {
-          stopTimer();
-        }
-      }
-      break;
-      
-    case 'chat':
-      addChatMessage(msg.sender, msg.message);
-      break;
-      
-    case 'opponent_left':
-      onlineInfo.textContent = 'Соперник отсоединился...';
-      stopTimer();
-      break;
-  }
+    console.log("Received message:", msg);
+    
+    switch (msg.type) {
+        case 'ready':
+            gameState.online.active = true;
+            gameState.online.board = msg.board || Array(9).fill('');
+            gameState.online.turn = msg.turn || 'X';
+            gameState.online.mySymbol = msg.your_symbol;
+            gameState.online.opponent = msg.opponent;
+            
+            elements.myNameDisplay.textContent = elements.onlineName.value || 'Игрок';
+            elements.opponentNameDisplay.textContent = gameState.online.opponent || '—';
+            elements.onlineInfo.textContent = `Игра началась! Ты играешь ${gameState.online.mySymbol}`;
+            
+            renderBoard();
+            elements.status.textContent = `Ход: ${gameState.online.turn === 'X' ? '❌' : '⭕'}`;
+            break;
+            
+        case 'state':
+            gameState.online.board = msg.board || Array(9).fill('');
+            gameState.online.turn = msg.turn || 'X';
+            renderBoard();
+            
+            if (msg.winner) {
+                handleGameEnd(msg);
+                gameState.online.active = false;
+                stopTimer();
+            } else {
+                elements.status.textContent = `Ход: ${msg.turn === 'X' ? '❌' : '⭕'}`;
+            }
+            break;
+            
+        case 'error':
+            alert(msg.msg);
+            break;
+            
+        case 'chat':
+            addChatMessage(msg.sender, msg.message);
+            break;
+    }
 }
 
-/* ====== Event Listeners ====== */
-btnLocal.onclick = () => { setMode('local'); resetBoard(); };
-btnOnline.onclick = () => { setMode('online'); resetBoard(); };
+/* ====== Helper Functions ====== */
+function checkWin(board) {
+    const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    
+    for (const [a, b, c] of wins) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return { winner: board[a], combo: [a, b, c] };
+        }
+    }
+    
+    if (!board.includes('')) return { winner: 'D', combo: [] };
+    return null;
+}
 
-btnVsAI.onclick = () => {
-  isPlayingWithAI = true;
-  resetBoard();
-  const name = localNameInput.value || 'Неоновый воин';
-  myNameDisplay.textContent = name;
-  opponentNameDisplay.textContent = '🤖 ИИ';
-};
-
-createBtn.onclick = async () => {
-  const name = onlineNameInput.value.trim() || 'Неоновый воин';
-  const code = await apiCreate();
-  if (!code) return;
-  
-  roomCodeInput.value = code;
-  connectWS(code, name);
-  createPanel.classList.remove('hidden');
-  joinPanel.classList.add('hidden');
-};
-
-joinBtn.onclick = () => {
-  joinPanel.classList.toggle('hidden');
-  createPanel.classList.add('hidden');
-};
-
-joinRoomBtn.onclick = () => {
-  const code = joinCodeInput.value.trim().toUpperCase();
-  if (!code) {
-    joinMsg.textContent = 'Введите код комнаты';
-    return;
-  }
-  
-  const name = onlineNameInput.value.trim() || 'Неоновый воин';
-  joinMsg.textContent = 'Соединяюсь...';
-  connectWS(code, name);
-  joinPanel.classList.remove('hidden');
-};
-
-copyCodeBtn.onclick = () => {
-  navigator.clipboard.writeText(roomCodeInput.value)
-    .then(() => {
-      copyCodeBtn.textContent = '✅ Скопировано!';
-      setTimeout(() => {
-        copyCodeBtn.textContent = '📋 Скопировать код';
-      }, 2000);
+function renderBoard() {
+    const board = gameState.mode === 'local' ? gameState.localGame.board : gameState.online.board;
+    const cells = document.querySelectorAll('.cell');
+    
+    board.forEach((value, i) => {
+        cells[i].textContent = value ? (value === 'X' ? '❌' : '⭕') : '';
+        cells[i].className = 'cell';
+        if (value === 'X') cells[i].classList.add('x');
+        if (value === 'O') cells[i].classList.add('o');
     });
-};
+}
 
-resetAllBtn.onclick = () => {
-  scores = { X: 0, O: 0, T: 0 };
-  updateScores();
-  resetBoard();
-  isPlayingWithAI = false;
-  
-  if (mode === 'online' && online.ws) {
-    online.ws.close();
-    online.ws = null;
-  }
-};
+function handleGameEnd(result) {
+    if (result.winner === 'D') {
+        elements.status.textContent = 'Ничья 🤝';
+        gameState.scores.T++;
+    } else {
+        elements.status.textContent = `Победил ${result.winner === 'X' ? '❌' : '⭕'}!`;
+        gameState.scores[result.winner]++;
+    }
+    updateScores();
+}
 
-restartBtn.onclick = () => {
-  if (mode === 'local') {
+function updateScores() {
+    elements.scoreX.textContent = gameState.scores.X;
+    elements.scoreO.textContent = gameState.scores.O;
+    elements.scoreT.textContent = gameState.scores.T;
+}
+
+function toggleJoinPanel() {
+    elements.joinPanel.classList.toggle('hidden');
+    elements.createPanel.classList.add('hidden');
+}
+
+function joinRoom() {
+    const code = elements.joinCodeInput.value.trim().toUpperCase();
+    if (!code) {
+        elements.joinMsg.textContent = 'Введите код комнаты';
+        return;
+    }
+    
+    const name = elements.onlineName.value.trim() || 'Неоновый воин';
+    elements.joinMsg.textContent = 'Соединяюсь...';
+    connectWS(code, name);
+}
+
+function copyRoomCode() {
+    navigator.clipboard.writeText(elements.roomCode.value)
+        .then(() => {
+            elements.copyCode.textContent = '✅ Скопировано!';
+            setTimeout(() => {
+                elements.copyCode.textContent = '📋 Скопировать код';
+            }, 2000);
+        });
+}
+
+function resetAll() {
+    gameState.scores = { X: 0, O: 0, T: 0 };
+    updateScores();
     resetBoard();
-  } else if (mode === 'online' && online.ws) {
-    online.ws.send(JSON.stringify({ type: 'rematch' }));
-  }
-};
+    gameState.isPlayingWithAI = false;
+    
+    if (gameState.mode === 'online' && gameState.online.ws) {
+        gameState.online.ws.close();
+        gameState.online.ws = null;
+    }
+}
 
-sendChatBtn.onclick = () => {
-  const message = chatInput.value.trim();
-  if (message && online.ws) {
-    online.ws.send(JSON.stringify({ type: 'chat', message }));
-    addChatMessage('Вы', message);
-    chatInput.value = '';
-  }
-};
+function restartGame() {
+    if (gameState.mode === 'local') {
+        resetBoard();
+    } else if (gameState.mode === 'online' && gameState.online.ws) {
+        gameState.online.ws.send(JSON.stringify({ type: 'rematch' }));
+    }
+}
 
-chatInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    sendChatBtn.click();
-  }
-});
+function addChatMessage(sender, message) {
+    const messageEl = document.createElement('div');
+    messageEl.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    messageEl.style.marginBottom = '5px';
+    elements.chatMessages.appendChild(messageEl);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
 
-/* ====== Initialize Game ====== */
-setMode('local');
-resetBoard();
-updateScores();
+function sendChat() {
+    const message = elements.chatInput.value.trim();
+    if (message && gameState.online.ws) {
+        gameState.online.ws.send(JSON.stringify({ type: 'chat', message }));
+        addChatMessage('Вы', message);
+        elements.chatInput.value = '';
+    }
+}
+
+function startTimer() {
+    stopTimer();
+    gameState.online.timeLeft = 30;
+    elements.timer.textContent = gameState.online.timeLeft;
+    
+    gameState.online.timer = setInterval(() => {
+        gameState.online.timeLeft--;
+        elements.timer.textContent = gameState.online.timeLeft;
+        
+        if (gameState.online.timeLeft <= 0) {
+            stopTimer();
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    if (gameState.online.timer) {
+        clearInterval(gameState.online.timer);
+        gameState.online.timer = null;
+    }
+}
+
+/* ====== Start the Game ====== */
+document.addEventListener('DOMContentLoaded', initGame);
 </script>
 </body>
 </html>
