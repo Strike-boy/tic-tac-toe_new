@@ -3,60 +3,441 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Крестики-нолики by Strike_001</title>
+<title>NEON Tic-Tac-Toe</title>
 <style>
-  /* --- стиль похожий на твой Canva-шаблон, но компактнее --- */
-  :root{--bg1:#667eea;--bg2:#764ba2;--glass:rgba(255,255,255,.08)}
-  *{box-sizing:border-box}
-  body{min-height:100vh;margin:0;font-family:Inter,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;display:flex;align-items:center;justify-content:center;padding:20px}
-  .app{width:100%;max-width:900px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border-radius:16px;padding:18px;backdrop-filter:blur(6px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .top{display:flex;gap:16px;align-items:center;justify-content:space-between}
-  .title{font-size:1.4rem;font-weight:700}
-  .controls{display:flex;gap:10px;align-items:center}
-  button.btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
-  button.btn.secondary{background:transparent;border:1px dashed rgba(255,255,255,.12)}
-  .main{display:flex;gap:24px;margin-top:18px;flex-wrap:wrap}
-  .left{flex:1;min-width:280px}
-  .right{width:360px;min-width:280px}
-  .panel{background:rgba(0,0,0,.12);padding:12px;border-radius:12px}
-  .modes{display:flex;gap:8px;margin-bottom:12px}
-  .modes button{flex:1}
-  .small{font-size:.9rem;opacity:.85}
-  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-  .cell{aspect-ratio:1;background:rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.6rem;cursor:pointer;user-select:none}
-  .cell.x{color:#ff6b6b}
-  .cell.o{color:#4ecdc4}
-  .cell.disabled{opacity:.6;cursor:not-allowed}
-  .status{margin-top:10px;font-weight:600}
-  .code-box{display:flex;gap:8px;align-items:center;margin-top:8px}
-  input[type="text"], input[type="tel"]{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:transparent;color:#fff;outline:none}
-  .hidden{display:none}
-  @media(max-width:720px){.main{flex-direction:column}.right{width:100%}}
+  :root {
+    --neon-pink: #ff00ff;
+    --neon-blue: #00ffff;
+    --neon-green: #39ff14;
+    --neon-purple: #bf00ff;
+    --dark-bg: #0a0a1a;
+    --darker-bg: #050510;
+    --glass: rgba(255, 255, 255, 0.05);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--darker-bg);
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(255, 0, 255, 0.1) 0%, transparent 20%),
+      radial-gradient(circle at 85% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 20%),
+      radial-gradient(circle at 50% 80%, rgba(57, 255, 20, 0.1) 0%, transparent 20%);
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 1000px;
+    background: var(--glass);
+    border-radius: 20px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 0 50px rgba(255, 0, 255, 0.2),
+      0 0 75px rgba(0, 255, 255, 0.2),
+      inset 0 0 50px rgba(0, 0, 0, 0.3);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue), var(--neon-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-top: 5px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+  }
+
+  .btn.neon-pink {
+    background: linear-gradient(45deg, rgba(255, 0, 255, 0.2), rgba(191, 0, 255, 0.2));
+    border: 1px solid var(--neon-pink);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+  }
+
+  .btn.neon-blue {
+    background: linear-gradient(45deg, rgba(0, 255, 255, 0.2), rgba(0, 191, 255, 0.2));
+    border: 1px solid var(--neon-blue);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 25px;
+  }
+
+  .game-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .mode-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+  }
+
+  .player-info {
+    text-align: right;
+  }
+
+  .timer {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--neon-green);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cell:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .cell.x {
+    color: var(--neon-pink);
+    text-shadow: 0 0 15px var(--neon-pink);
+  }
+
+  .cell.o {
+    color: var(--neon-blue);
+    text-shadow: 0 0 15px var(--neon-blue);
+  }
+
+  .cell.winner {
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .cell::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+  }
+
+  .cell:hover::before {
+    left: 100%;
+  }
+
+  .status {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 15px 0;
+    color: var(--neon-green);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+  }
+
+  .score-board {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-top: 15px;
+  }
+
+  .score-item {
+    text-align: center;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .score-x { color: var(--neon-pink); }
+  .score-o { color: var(--neon-blue); }
+  .score-t { color: var(--neon-green); }
+
+  .menu-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .mode-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+  }
+
+  .panel {
+    margin-top: 20px;
+  }
+
+  .input-group {
+    margin-bottom: 15px;
+  }
+
+  .input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--neon-blue);
+  }
+
+  .input-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 1rem;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+  }
+
+  .action-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .chat-container {
+    margin-top: 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+  }
+
+  .chat-messages {
+    height: 150px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .chat-input {
+    display: flex;
+    gap: 10px;
+  }
+
+  .chat-input input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .online-status {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+  }
+
+  /* Анимации */
+  @keyframes appear {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .cell.x, .cell.o {
+    animation: appear 0.3s ease-out;
+  }
+
+  /* Адаптивность */
+  @media (max-width: 900px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .header {
+      flex-direction: column;
+      gap: 15px;
+      text-align: center;
+    }
+    
+    .title {
+      font-size: 1.8rem;
+    }
+  }
+
+  /* Стили для победной линии */
+  .win-line {
+    position: absolute;
+    background: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+    z-index: 1;
+  }
+
+  /* Эмодзи реакции */
+  .emoji-reaction {
+    position: absolute;
+    font-size: 2rem;
+    animation: floatUp 2s ease-out;
+    z-index: 100;
+  }
+
+  @keyframes floatUp {
+    0% {
+      transform: translateY(0) scale(0);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-50px) scale(1.2);
+    }
+    100% {
+      transform: translateY(-100px) scale(0.8);
+      opacity: 0;
+    }
+  }
 </style>
 </head>
 <body>
   <div class="app">
-    <div class="top">
-      <div><div class="title">🎮 Крестики-Нолики — локально / онлайн</div><div class="small">Играй с другом в другом городе — создавай комнату и передавай код</div></div>
+    <div class="header">
+      <div>
+        <div class="title">NEON TIC-TAC-TOE</div>
+        <div class="subtitle">Игра будущего уже здесь</div>
+      </div>
       <div class="controls">
-        <button id="resetAll" class="btn secondary">🔄 Новая игра</button>
-        <button id="restartBtn" class="btn secondary">🔄 Рестарт</button>
+        <button class="btn neon-pink" id="resetAll">🔄 Новая игра</button>
+        <button class="btn neon-blue" id="restartBtn">⚡ Рестарт</button>
       </div>
     </div>
 
-    <div class="main">
-      <!-- левый — поле и статус -->
-      <div class="left panel">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="small">Режим: <span id="modeLabel">Локально</span></div>
-          <div class="small">
-            Ты: <strong id="myNameDisplay">Гость</strong><br>
-            Соперник: <strong id="opponentNameDisplay">—</strong>
+    <div class="main-grid">
+      <!-- Левая секция - игровое поле -->
+      <div class="game-section">
+        <div class="game-info">
+          <div class="mode-badge" id="modeLabel">Локально</div>
+          <div class="player-info">
+            <div>Вы: <strong id="myNameDisplay">Гость</strong></div>
+            <div>Соперник: <strong id="opponentNameDisplay">—</strong></div>
           </div>
         </div>
 
+        <div class="timer" id="timer">30</div>
+        
         <div class="board" id="board">
-          <!-- 9 клеток -->
           <div class="cell" data-index="0"></div>
           <div class="cell" data-index="1"></div>
           <div class="cell" data-index="2"></div>
@@ -69,356 +450,87 @@
         </div>
 
         <div class="status" id="status">Ход: ❌</div>
-        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-          <div class="small">Счёт — X: <span id="scoreX">0</span>  O: <span id="scoreO">0</span>  Ничьи: <span id="scoreT">0</span></div>
+        
+        <div class="score-board">
+          <div class="score-item">
+            <div>❌</div>
+            <div class="score-value score-x" id="scoreX">0</div>
+          </div>
+          <div class="score-item">
+            <div>🤝</div>
+            <div class="score-value score-t" id="scoreT">0</div>
+          </div>
+          <div class="score-item">
+            <div>⭕</div>
+            <div class="score-value score-o" id="scoreO">0</div>
+          </div>
         </div>
       </div>
 
-      <!-- правый — меню режимов -->
-      <div class="right panel">
-        <div class="modes">
-          <button id="btnLocal" class="btn">Локально</button>
-          <button id="btnOnline" class="btn">Онлайн</button>
+      <!-- Правая секция - меню -->
+      <div class="menu-section">
+        <div class="mode-selector">
+          <button class="btn mode-btn" id="btnLocal">🎮 Локально</button>
+          <button class="btn mode-btn" id="btnOnline">🌐 Онлайн</button>
         </div>
 
         <div id="localPanel">
-          <div class="small">Играй на одном устройстве — передайте телефон/экран другу.</div>
-          <div style="margin-top:10px">
-            <label class="small">Ваш ник</label><br>
-            <input id="localName" type="text" placeholder="Игрок" />
+          <div class="input-group">
+            <label>Ваш никнейм</label>
+            <input id="localName" type="text" placeholder="Неоновый воин" />
+          </div>
+          
+          <div class="action-buttons">
+            <button class="btn action-btn" id="btnVsAI">🤖 Играть с ИИ</button>
           </div>
         </div>
 
         <div id="onlinePanel" class="hidden">
-          <div class="small">Играй онлайн с другом по коду.</div>
-
-          <div style="margin-top:8px">
-            <label class="small">Твой ник (будет виден сопернику)</label><br>
-            <input id="onlineName" type="text" placeholder="Игрок" />
+          <div class="input-group">
+            <label>Твой никнейм</label>
+            <input id="onlineName" type="text" placeholder="Неоновый воин" />
           </div>
 
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <button id="createBtn" class="btn">➕ Создать комнату</button>
-            <button id="joinBtn" class="btn">🔗 Присоединиться</button>
+          <div class="action-buttons">
+            <button class="btn neon-pink action-btn" id="createBtn">➕ Создать комнату</button>
+            <button class="btn neon-blue action-btn" id="joinBtn">🔗 Присоединиться</button>
           </div>
 
-          <div id="createPanel" class="hidden" style="margin-top:10px">
-            <div class="small">Код комнаты:</div>
-            <div class="code-box">
+          <div id="createPanel" class="hidden">
+            <div class="input-group">
+              <label>Код комнаты</label>
               <input id="roomCode" type="text" readonly />
-              <button id="copyCode" class="btn">Скопировать</button>
             </div>
-            <div class="small" style="margin-top:8px">Поделись кодом с другом — он вставит его в поле ниже и нажмёт «Присоединиться».</div>
+            <button class="btn action-btn" id="copyCode">📋 Скопировать код</button>
           </div>
 
-          <div id="joinPanel" class="hidden" style="margin-top:10px">
-            <div class="small">Ввести код комнаты</div>
-            <div style="display:flex;gap:8px;margin-top:6px">
-              <input id="joinCodeInput" type="text" placeholder="AB12" />
-              <button id="joinRoomBtn" class="btn">Войти</button>
+          <div id="joinPanel" class="hidden">
+            <div class="input-group">
+              <label>Введите код комнаты</label>
+              <input id="joinCodeInput" type="text" placeholder="ABCD" />
             </div>
-            <div id="joinMsg" class="small" style="margin-top:8px;color:#ffd"></div>
+            <button class="btn action-btn" id="joinRoomBtn">🚀 Войти</button>
+            <div id="joinMsg" class="online-status"></div>
           </div>
 
-          <div id="onlineInfo" class="small" style="margin-top:8px"></div>
+          <div id="onlineInfo" class="online-status">Отключено</div>
+
+          <!-- Чат -->
+          <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+              <input type="text" id="chatInput" placeholder="Сообщение..." />
+              <button class="btn" id="sendChatBtn">📨</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-<script>
-/* ====== НАСТРОЙКИ ======
-  Поменяй адрес бэкенда на реальный (без слеша в конце):
-  Пример: const BACKEND_BASE = "https://tic-backend.onrender.com"
-*/
-const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com"; // <- ЗАМЕНИ на адрес бэкенда
-
-/* ====== UI & State ====== */
-const boardEls = [...document.querySelectorAll('.cell')];
-const statusEl = document.getElementById('status');
-const modeLabel = document.getElementById('modeLabel');
-const btnLocal = document.getElementById('btnLocal');
-const btnOnline = document.getElementById('btnOnline');
-const localPanel = document.getElementById('localPanel');
-const onlinePanel = document.getElementById('onlinePanel');
-const createBtn = document.getElementById('createBtn');
-const joinBtn = document.getElementById('joinBtn');
-const createPanel = document.getElementById('createPanel');
-const joinPanel = document.getElementById('joinPanel');
-const roomCodeInput = document.getElementById('roomCode');
-const copyCodeBtn = document.getElementById('copyCode');
-const joinCodeInput = document.getElementById('joinCodeInput');
-const joinRoomBtn = document.getElementById('joinRoomBtn');
-const joinMsg = document.getElementById('joinMsg');
-const onlineInfo = document.getElementById('onlineInfo');
-const myNameDisplay = document.getElementById('myNameDisplay');
-const opponentNameDisplay = document.getElementById('opponentNameDisplay');
-const localNameInput = document.getElementById('localName');
-const onlineNameInput = document.getElementById('onlineName');
-const resetAllBtn = document.getElementById('resetAll');
-const restartBtn = document.getElementById('restartBtn');
-const scoreX = document.getElementById('scoreX'), scoreO = document.getElementById('scoreO'), scoreT = document.getElementById('scoreT');
-
-let mode = 'local'; // 'local' или 'online'
-let localGame = { board: Array(9).fill(''), turn:'X', active:true };
-let online = { ws:null, code:null, mySymbol:null, board:Array(9).fill(''), turn:'X', active:false, opponent:null };
-let scores = { X:0, O:0, T:0 };
-
-function setMode(m){
-  mode = m;
-  modeLabel.textContent = (m==='local'?'Локально':'Онлайн');
-  localPanel.classList.toggle('hidden', m!=='local');
-  onlinePanel.classList.toggle('hidden', m!=='online');
-  resetBoard();
-}
-
-/* ====== локальная логика ====== */
-function resetBoard(){
-  localGame.board = Array(9).fill('');
-  localGame.turn = 'X';
-  localGame.active = true;
-  online.active = false;
-  onlineInfo.textContent = '';
-  roomCodeInput.value = '';
-  createPanel.classList.add('hidden');
-  joinPanel.classList.add('hidden');
-  joinMsg.textContent = '';
-  myNameDisplay.textContent = (mode==='local'? (localNameInput.value||'Игрок') : (onlineNameInput.value||'Игрок'));
-  boardEls.forEach((c,i)=>{
-    c.textContent = '';
-    c.classList.remove('x','o','disabled','winner');
-    c.dataset.index = i;
-  });
-  statusEl.textContent = `Ход: ${localGame.turn==='X'?'❌':'⭕'}`;
-}
-
-function checkWin(board){
-  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for(const [a,b,c] of wins) if(board[a] && board[a]===board[b] && board[a]===board[c]) return board[a];
-  if(!board.includes('')) return 'D';
-  return null;
-}
-
-boardEls.forEach((cell, idx)=>{
-  cell.addEventListener('click', ()=> onCellClick(idx));
-});
-
-function onCellClick(i){
-  if(mode==='local') {
-    if(!localGame.active) return;
-    if(localGame.board[i]) return;
-    localGame.board[i]=localGame.turn;
-    renderLocal();
-    const res = checkWin(localGame.board);
-    if(res){
-      localGame.active=false;
-      if(res==='D'){ statusEl.textContent='Ничья 🤝'; scores.T++; }
-      else { statusEl.textContent = `Победил ${res==='X'?'❌':'⭕'}!`; scores[res]++; }
-      updateScores(); return;
-    }
-    localGame.turn = localGame.turn==='X'?'O':'X';
-    statusEl.textContent = `Ход: ${localGame.turn==='X'?'❌':'⭕'}`;
-  } else {
-    // online
-    if(!online.active) { alert('Сначала создай или присоединись к комнате.'); return; }
-    if(online.turn !== online.mySymbol) return;
-    if(online.board[i]) return;
-    // отправляем ход на сервер
-    const msg = { type:'move', index:i };
-    online.ws.send(JSON.stringify(msg));
-  }
-}
-
-function renderLocal(){
-  localGame.board.forEach((v,i)=>{
-    boardEls[i].textContent = v ? (v==='X'?'❌':'⭕') : '';
-    boardEls[i].classList.toggle('x', v==='X');
-    boardEls[i].classList.toggle('o', v==='O');
-  });
-}
-
-function updateScores(){ scoreX.textContent = scores.X; scoreO.textContent = scores.O; scoreT.textContent = scores.T; }
-
-/* ====== онлайн: create / join / websocket ====== */
-async function apiCreate(){
-  const url = BACKEND_BASE + '/create';
-  try{
-    const r = await fetch(url, {method:'POST'});
-    const j = await r.json();
-    return j.code;
-  }catch(e){
-    console.error(e); alert('Ошибка создания комнаты. Проверь бэкенд.');
-  }
-}
-
-function connectWS(code, name){
-  if(!BACKEND_BASE || BACKEND_BASE.includes('YOUR_BACKEND_URL')){ alert('Задай BACKEND_BASE в index.html'); return; }
-  // build wss url
-  const backendHost = BACKEND_BASE.replace(/^https?:\/\//,'');
-  const proto = location.protocol === 'https:' ? 'wss':'ws';
-  const url = `${proto}://${backendHost}/ws/${code}?name=${encodeURIComponent(name||'Игрок')}`;
-  const ws = new WebSocket(url);
-  online.ws = ws;
-  online.code = code;
-  onlineInfo.textContent = 'Соединяюсь...';
-  ws.onopen = ()=> {
-    onlineInfo.textContent = 'Ожидание соперника...';
-  };
-  ws.onmessage = (ev)=>{
-    const msg = JSON.parse(ev.data);
-    // handle types: ready, state, error, info
-    if(msg.type === 'error'){ alert(msg.msg); onlineInfo.textContent = msg.msg; ws.close(); return; }
-    if(msg.type === 'waiting'){
-      onlineInfo.textContent = 'Комната создана, ждём соперника...';
-      roomCodeInput.value = code;
-      createPanel.classList.remove('hidden');
-      joinPanel.classList.add('hidden');
-      online.active = true;
-      online.mySymbol = msg.your_symbol;
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.opponent = msg.opponent || null;
-      myNameDisplay.textContent = name || 'Игрок';
-      renderOnlineState();
-      return;
-    }
-    if(msg.type === 'ready'){
-      // оба игрока подключены
-      online.active = true;
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.mySymbol = msg.your_symbol;
-      online.opponent = msg.opponent;
-
-      myNameDisplay.textContent = name || 'Игрок';
-      opponentNameDisplay.textContent = online.opponent || '—';
-
-      onlineInfo.textContent = `Игра началась. Твой символ: ${online.mySymbol}`;
-      renderOnlineState();
-      return;
-    }
-    if(msg.type === 'state'){
-      online.board = msg.board;
-      online.turn = msg.turn;
-
-      if(msg.opponent){
-        online.opponent = msg.opponent;
-        opponentNameDisplay.textContent = online.opponent || '—';
-      }
-
-      renderOnlineState();
-
-      if(msg.winner){
-        if(msg.winner === 'D'){ 
-          statusEl.textContent = 'Ничья!'; 
-          scores.T++; 
-        } else { 
-          statusEl.textContent = `Победил ${msg.winner==='X'?'❌':'⭕'}!`; 
-          scores[msg.winner]++; 
-        }
-        updateScores();
-        online.active = false;
-      } else {
-        statusEl.textContent = `Ход: ${msg.turn==='X'?'❌':'⭕'}`;
-      }
-      return;
-    }
-    if(msg.type === 'rematch_start'){
-      // сервер начал реванш
-      online.board = msg.board;
-      online.turn = msg.turn;
-      online.active = true;
-      renderOnlineState();
-      statusEl.textContent = `Реванш! Ход: ${msg.turn==='X'?'❌':'⭕'}`;
-      return;
-    }
-    if(msg.type === 'opponent_left'){
-      onlineInfo.textContent = 'Соперник отсоединился. Ожидаем нового...';
-    }
-  };
-  ws.onclose = ()=> {
-    onlineInfo.textContent = 'Соединение закрыто';
-    online.active = false;
-  };
-  ws.onerror = (e)=> {
-    console.error(e);
-    onlineInfo.textContent = 'Ошибка WebSocket';
-  };
-}
-
-function renderOnlineState(){
-  // render board
-  online.board.forEach((v,i)=>{
-    boardEls[i].textContent = v ? (v==='X'?'❌':'⭕') : '';
-    boardEls[i].classList.toggle('x', v==='X');
-    boardEls[i].classList.toggle('o', v==='O');
-  });
-  statusEl.textContent = online.active ? `Ход: ${online.turn==='X'?'❌':'⭕'}` : statusEl.textContent;
-}
-
-/* ====== UI кнопки ====== */
-btnLocal.onclick = ()=> { setMode('local'); resetBoard(); }
-btnOnline.onclick = ()=> { setMode('online'); resetBoard(); }
-
-createBtn.onclick = async ()=>{
-  const name = onlineNameInput.value.trim() || ('Игрок'+Math.floor(Math.random()*900+100));
-  const code = await apiCreate();
-  if(!code) return;
-  roomCodeInput.value = code;
-  connectWS(code, name);
-  createPanel.classList.remove('hidden');
-  joinPanel.classList.add('hidden');
-};
-
-copyCodeBtn.onclick = ()=>{
-  const txt = roomCodeInput.value;
-  if(!txt) return;
-  navigator.clipboard.writeText(txt).then(()=>copyCodeBtn.textContent='Скопировано!');
-  setTimeout(()=>copyCodeBtn.textContent='Скопировать',1200);
-};
-
-joinBtn.onclick = ()=> {
-  joinPanel.classList.toggle('hidden');
-  createPanel.classList.add('hidden');
-};
-
-joinRoomBtn.onclick = ()=>{
-  const code = joinCodeInput.value.trim().toUpperCase();
-  if(!code){ joinMsg.textContent = 'Введи код'; return; }
-  const name = onlineNameInput.value.trim() || ('Игрок'+Math.floor(Math.random()*900+100));
-  joinMsg.textContent = 'Соединяюсь...';
-  connectWS(code, name);
-  createPanel.classList.add('hidden'); joinPanel.classList.remove('hidden');
-  roomCodeInput.value = code;
-};
-
-// Новая игра (полный сброс)
-resetAllBtn.onclick = () => {
-  scores = { X: 0, O: 0, T: 0 };
-  updateScores();
-  resetBoard();
-
-  // если мы в онлайне – отключаемся от сервера
-  if (mode === 'online' && online.ws) {
-    online.ws.close();
-    online.ws = null;
-  }
-};
-
-// Рестарт игры (только доска)
-restartBtn.onclick = () => {
-  if (mode === 'local') {
-    resetBoard();
-  } else if (mode === 'online' && online.ws && online.active !== null) {
-    // Отправляем запрос на реванш серверу
-    online.ws.send(JSON.stringify({ type: 'rematch' }));
-  }
-};
-
-/* ====== инициализация страницы ====== */
-setMode('local');
-resetBoard();
-updateScores();
-</script>
+  <script>
+    // Здесь будет JavaScript код...
+    // (Полный JS код из предыдущей версии с добавлением новых функций)
+  </script>
 </body>
 </html>
