@@ -783,32 +783,11 @@ function handleOnlineMessage(msg) {
     
     switch (msg.type) {
         case 'ready':
-            gameState.online.active = true;
-            gameState.online.board = msg.board || Array(9).fill('');
-            gameState.online.turn = msg.turn || 'X';
-            gameState.online.mySymbol = msg.your_symbol;
-            gameState.online.opponent = msg.opponent;
-            
-            elements.myNameDisplay.textContent = elements.onlineName.value || 'Игрок';
-            elements.opponentNameDisplay.textContent = gameState.online.opponent || '—';
-            elements.onlineInfo.textContent = `Игра началась! Ты играешь ${gameState.online.mySymbol}`;
-            
-            renderBoard();
-            elements.status.textContent = `Ход: ${gameState.online.turn === 'X' ? '❌' : '⭕'}`;
+            // ... существующий код ready ...
             break;
             
         case 'state':
-            gameState.online.board = msg.board || Array(9).fill('');
-            gameState.online.turn = msg.turn || 'X';
-            renderBoard();
-            
-            if (msg.winner) {
-                handleGameEnd(msg);
-                gameState.online.active = false;
-                stopTimer();
-            } else {
-                elements.status.textContent = `Ход: ${msg.turn === 'X' ? '❌' : '⭕'}`;
-            }
+            // ... существующий код state ...
             break;
             
         case 'error':
@@ -816,7 +795,31 @@ function handleOnlineMessage(msg) {
             break;
             
         case 'chat':
-            addChatMessage(msg.sender, msg.message);
+            // ✅ ФИКС: Добавляем сообщение только если отправитель не я
+            const myName = elements.onlineName.value.trim();
+            if (msg.sender !== myName) {
+                addChatMessage(msg.sender, msg.message);
+            }
+            break;
+            
+        case 'rematch_vote':
+            // Уведомление о голосе за реванш
+            showError(`${msg.player_name} голосует за реванш (${msg.votes}/${msg.total_players})`);
+            break;
+            
+        case 'rematch_start':
+            // Начало реванша
+            gameState.online.board = msg.board || Array(9).fill('');
+            gameState.online.turn = msg.turn || 'X';
+            gameState.online.active = true;
+            renderBoard();
+            elements.status.textContent = `Реванш! Ход: ${msg.turn === 'X' ? '❌' : '⭕'}`;
+            showError(msg.message || "Реванш начинается!");
+            break;
+            
+        case 'opponent_left':
+            showError(msg.msg);
+            gameState.online.active = false;
             break;
     }
 }
