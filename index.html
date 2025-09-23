@@ -378,37 +378,6 @@
       font-size: 1.8rem;
     }
   }
-
-  /* Стили для победной линии */
-  .win-line {
-    position: absolute;
-    background: var(--neon-green);
-    box-shadow: 0 0 10px var(--neon-green);
-    z-index: 1;
-  }
-
-  /* Эмодзи реакции */
-  .emoji-reaction {
-    position: absolute;
-    font-size: 2rem;
-    animation: floatUp 2s ease-out;
-    z-index: 100;
-  }
-
-  @keyframes floatUp {
-    0% {
-      transform: translateY(0) scale(0);
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-      transform: translateY(-50px) scale(1.2);
-    }
-    100% {
-      transform: translateY(-100px) scale(0.8);
-      opacity: 0;
-    }
-  }
 </style>
 </head>
 <body>
@@ -425,7 +394,6 @@
     </div>
 
     <div class="main-grid">
-      <!-- Левая секция - игровое поле -->
       <div class="game-section">
         <div class="game-info">
           <div class="mode-badge" id="modeLabel">Локально</div>
@@ -467,7 +435,6 @@
         </div>
       </div>
 
-      <!-- Правая секция - меню -->
       <div class="menu-section">
         <div class="mode-selector">
           <button class="btn mode-btn" id="btnLocal">🎮 Локально</button>
@@ -515,7 +482,6 @@
 
           <div id="onlineInfo" class="online-status">Отключено</div>
 
-          <!-- Чат -->
           <div class="chat-container">
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input">
@@ -529,345 +495,271 @@
   </div>
 
 <script>
-/* ====== НАСТРОЙКИ ====== */
-const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com"; // ЗАМЕНИ НА СВОЙ URL
+// ====== КОНФИГУРАЦИЯ ======
+const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com";
 
-/* ====== UI Elements ====== */
+// ====== ПЕРЕМЕННЫЕ ======
+let currentMode = 'local';
+let gameActive = true;
+let currentPlayer = 'X';
+let gameBoard = ['', '', '', '', '', '', '', '', ''];
+let scores = { X: 0, O: 0, T: 0 };
+let isAIGame = false;
+
+// Онлайн-режим
+let wsConnection = null;
+let roomCode = '';
+let mySymbol = '';
+let opponentName = '';
+let gameTimer = null;
+let timeLeft = 30;
+
+// ====== DOM ЭЛЕМЕНТЫ ======
 const elements = {
+    // Кнопки режимов
+    btnLocal: document.getElementById('btnLocal'),
+    btnOnline: document.getElementById('btnOnline'),
+    
+    // Панели
+    localPanel: document.getElementById('localPanel'),
+    onlinePanel: document.getElementById('onlinePanel'),
+    createPanel: document.getElementById('createPanel'),
+    joinPanel: document.getElementById('joinPanel'),
+    
+    // Поля ввода
+    localName: document.getElementById('localName'),
+    onlineName: document.getElementById('onlineName'),
+    roomCode: document.getElementById('roomCode'),
+    joinCodeInput: document.getElementById('joinCodeInput'),
+    
+    // Кнопки действий
+    createBtn: document.getElementById('createBtn'),
+    joinBtn: document.getElementById('joinBtn'),
+    joinRoomBtn: document.getElementById('joinRoomBtn'),
+    copyCode: document.getElementById('copyCode'),
+    btnVsAI: document.getElementById('btnVsAI'),
+    resetAll: document.getElementById('resetAll'),
+    restartBtn: document.getElementById('restartBtn'),
+    sendChatBtn: document.getElementById('sendChatBtn'),
+    
+    // Игровые элементы
     board: document.getElementById('board'),
     status: document.getElementById('status'),
     timer: document.getElementById('timer'),
     modeLabel: document.getElementById('modeLabel'),
-    btnLocal: document.getElementById('btnLocal'),
-    btnOnline: document.getElementById('btnOnline'),
-    localPanel: document.getElementById('localPanel'),
-    onlinePanel: document.getElementById('onlinePanel'),
-    createBtn: document.getElementById('createBtn'),
-    joinBtn: document.getElementById('joinBtn'),
-    createPanel: document.getElementById('createPanel'),
-    joinPanel: document.getElementById('joinPanel'),
-    roomCode: document.getElementById('roomCode'),
-    copyCode: document.getElementById('copyCode'),
-    joinCodeInput: document.getElementById('joinCodeInput'),
-    joinRoomBtn: document.getElementById('joinRoomBtn'),
-    joinMsg: document.getElementById('joinMsg'),
-    onlineInfo: document.getElementById('onlineInfo'),
     myNameDisplay: document.getElementById('myNameDisplay'),
     opponentNameDisplay: document.getElementById('opponentNameDisplay'),
-    localName: document.getElementById('localName'),
-    onlineName: document.getElementById('onlineName'),
-    resetAll: document.getElementById('resetAll'),
-    restartBtn: document.getElementById('restartBtn'),
-    scoreX: document.getElementById('scoreX'),
-    scoreO: document.getElementById('scoreO'),
-    scoreT: document.getElementById('scoreT'),
-    btnVsAI: document.getElementById('btnVsAI'),
+    onlineInfo: document.getElementById('onlineInfo'),
+    joinMsg: document.getElementById('joinMsg'),
     chatMessages: document.getElementById('chatMessages'),
     chatInput: document.getElementById('chatInput'),
-    sendChatBtn: document.getElementById('sendChatBtn')
-};
-
-/* ====== Game State ====== */
-let gameState = {
-    mode: 'local',
-    localGame: { board: Array(9).fill(''), turn: 'X', active: true },
-    online: { 
-        ws: null, code: null, mySymbol: null, 
-        board: Array(9).fill(''), turn: 'X', 
-        active: false, opponent: null, 
-        timer: null, timeLeft: 30 
-    },
-    scores: { X: 0, O: 0, T: 0 },
-    isPlayingWithAI: false
-};
-
-/* ====== Initialize Game ====== */
-function initGame() {
-    console.log("Initializing game...");
     
-    // Add event listeners
-    elements.btnLocal.addEventListener('click', () => setMode('local'));
-    elements.btnOnline.addEventListener('click', () => setMode('online'));
+    // Счет
+    scoreX: document.getElementById('scoreX'),
+    scoreO: document.getElementById('scoreO'),
+    scoreT: document.getElementById('scoreT')
+};
+
+// ====== ИНИЦИАЛИЗАЦИЯ ======
+function initGame() {
+    setupEventListeners();
+    resetGame();
+    updateDisplay();
+}
+
+function setupEventListeners() {
+    // Кнопки режимов
+    elements.btnLocal.addEventListener('click', () => switchMode('local'));
+    elements.btnOnline.addEventListener('click', () => switchMode('online'));
+    
+    // Кнопки онлайн-режима
     elements.createBtn.addEventListener('click', createRoom);
-    elements.joinBtn.addEventListener('click', toggleJoinPanel);
+    elements.joinBtn.addEventListener('click', showJoinPanel);
     elements.joinRoomBtn.addEventListener('click', joinRoom);
     elements.copyCode.addEventListener('click', copyRoomCode);
-    elements.resetAll.addEventListener('click', resetAll);
+    
+    // Кнопки управления
+    elements.resetAll.addEventListener('click', resetGame);
     elements.restartBtn.addEventListener('click', restartGame);
-    elements.btnVsAI.addEventListener('click', startVsAI);
+    elements.btnVsAI.addEventListener('click', startAIGame);
     elements.sendChatBtn.addEventListener('click', sendChat);
     elements.chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendChat();
     });
-
-    // Add cell click listeners
+    
+    // Обработчики клеток
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
-        cell.addEventListener('click', () => onCellClick(index));
+        cell.addEventListener('click', () => makeMove(index));
     });
-
-    // Initialize UI
-    setMode('local');
-    resetBoard();
-    updateScores();
-    
-    console.log("Game initialized successfully!");
 }
 
-/* ====== Core Game Functions ====== */
-function setMode(mode) {
-    gameState.mode = mode;
+// ====== ОСНОВНАЯ ИГРОВАЯ ЛОГИКА ======
+function switchMode(mode) {
+    currentMode = mode;
     elements.modeLabel.textContent = mode === 'local' ? 'Локально' : 'Онлайн';
     elements.localPanel.classList.toggle('hidden', mode !== 'local');
     elements.onlinePanel.classList.toggle('hidden', mode !== 'online');
-    resetBoard();
+    
+    if (wsConnection) {
+        wsConnection.close();
+        wsConnection = null;
+    }
+    
+    resetGame();
 }
 
-function resetBoard() {
-    gameState.localGame.board = Array(9).fill('');
-    gameState.localGame.turn = 'X';
-    gameState.localGame.active = true;
+function resetGame() {
+    gameBoard = ['', '', '', '', '', '', '', '', ''];
+    gameActive = true;
+    currentPlayer = 'X';
+    timeLeft = 30;
     
-    gameState.online.active = false;
-    elements.onlineInfo.textContent = '';
-    elements.roomCode.value = '';
     elements.createPanel.classList.add('hidden');
     elements.joinPanel.classList.add('hidden');
+    elements.onlineInfo.textContent = 'Отключено';
     elements.joinMsg.textContent = '';
-    stopTimer();
     
-    const playerName = gameState.mode === 'local' ? 
-        (elements.localName.value || 'Неоновый воин') : 
-        (elements.onlineName.value || 'Неоновый воин');
+    updateBoard();
+    updateStatus();
+    updateTimer();
+    clearChat();
     
-    elements.myNameDisplay.textContent = playerName;
-    
-    // Clear board
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach((cell, i) => {
-        cell.textContent = '';
-        cell.className = 'cell';
-        cell.dataset.index = i;
-    });
-    
-    elements.status.textContent = `Ход: ${gameState.localGame.turn === 'X' ? '❌' : '⭕'}`;
-    elements.timer.textContent = '30';
-}
-
-function onCellClick(index) {
-    console.log("Cell clicked:", index);
-    
-    if (gameState.mode === 'local') {
-        handleLocalMove(index);
+    if (currentMode === 'local') {
+        const name = elements.localName.value || 'Неоновый воин';
+        elements.myNameDisplay.textContent = name;
+        elements.opponentNameDisplay.textContent = isAIGame ? '🤖 ИИ' : '—';
     } else {
-        handleOnlineMove(index);
+        const name = elements.onlineName.value || 'Неоновый воин';
+        elements.myNameDisplay.textContent = name;
+        elements.opponentNameDisplay.textContent = '—';
     }
 }
 
-function handleLocalMove(index) {
-    if (!gameState.localGame.active) return;
-    if (gameState.localGame.board[index]) return;
-    
-    gameState.localGame.board[index] = gameState.localGame.turn;
-    renderBoard();
-    
-    const result = checkWin(gameState.localGame.board);
-    if (result && result.winner) {
-        gameState.localGame.active = false;
-        handleGameEnd(result);
+function restartGame() {
+    if (currentMode === 'online' && wsConnection) {
+        wsConnection.send(JSON.stringify({ type: 'rematch' }));
     } else {
-        gameState.localGame.turn = gameState.localGame.turn === 'X' ? 'O' : 'X';
-        elements.status.textContent = `Ход: ${gameState.localGame.turn === 'X' ? '❌' : '⭕'}`;
+        resetGame();
+    }
+}
+
+function makeMove(index) {
+    if (!gameActive) return;
+    if (gameBoard[index] !== '') return;
+    
+    if (currentMode === 'local') {
+        gameBoard[index] = currentPlayer;
+        updateBoard();
         
-        if (gameState.isPlayingWithAI && gameState.localGame.turn === 'O') {
-            setTimeout(() => makeAIMove(), 500);
-        }
-    }
-}
-
-function handleOnlineMove(index) {
-    if (!gameState.online.active) {
-        alert('Сначала создай или присоединись к комнате.');
-        return;
-    }
-    if (gameState.online.turn !== gameState.online.mySymbol) return;
-    if (gameState.online.board[index]) return;
-    
-    const msg = { type: 'move', index: index };
-    gameState.online.ws.send(JSON.stringify(msg));
-    stopTimer();
-}
-
-/* ====== AI Functions ====== */
-function startVsAI() {
-    gameState.isPlayingWithAI = true;
-    resetBoard();
-    const name = elements.localName.value || 'Неоновый воин';
-    elements.myNameDisplay.textContent = name;
-    elements.opponentNameDisplay.textContent = '🤖 ИИ';
-}
-
-function makeAIMove() {
-    if (!gameState.localGame.active || !gameState.isPlayingWithAI || gameState.localGame.turn !== 'O') return;
-    
-    const emptyCells = gameState.localGame.board
-        .map((cell, index) => cell === '' ? index : null)
-        .filter(index => index !== null);
-    
-    if (emptyCells.length > 0) {
-        const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        onCellClick(randomIndex);
-    }
-}
-
-/* ====== Online Functions ====== */
-async function createRoom() {
-    const name = elements.onlineName.value.trim() || 'Неоновый воин';
-    const code = await apiCreate();
-    if (!code) return;
-    
-    elements.roomCode.value = code;
-    connectWS(code, name);
-    elements.createPanel.classList.remove('hidden');
-    elements.joinPanel.classList.add('hidden');
-}
-
-async function apiCreate() {
-    try {
-        const response = await fetch(BACKEND_BASE + '/create', { method: 'POST' });
-        const data = await response.json();
-        return data.code;
-    } catch (error) {
-        console.error('Create error:', error);
-        alert('Ошибка создания комнаты');
-        return null;
-    }
-}
-
-function connectWS(code, name) {
-    const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name)}`;
-    
-    gameState.online.ws = new WebSocket(wsUrl);
-    gameState.online.code = code;
-    elements.onlineInfo.textContent = 'Соединяюсь...';
-    
-    gameState.online.ws.onopen = () => {
-        elements.onlineInfo.textContent = 'Ожидание соперника...';
-    };
-    
-    gameState.online.ws.onmessage = (event) => {
-        try {
-            const message = JSON.parse(event.data);
-            handleOnlineMessage(message);
-        } catch (error) {
-            console.error('Message parse error:', error);
-        }
-    };
-    
-    gameState.online.ws.onclose = () => {
-        elements.onlineInfo.textContent = 'Соединение закрыто';
-        gameState.online.active = false;
-        stopTimer();
-    };
-    
-    gameState.online.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        elements.onlineInfo.textContent = 'Ошибка соединения';
-    };
-}
-
-function handleOnlineMessage(msg) {
-    console.log("Received message:", msg);
-    
-    switch (msg.type) {
-        case 'ready':
-            // ... существующий код ready ...
-            break;
+        const result = checkWinner();
+        if (result) {
+            handleGameEnd(result);
+        } else {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateStatus();
             
-        case 'state':
-            // ... существующий код state ...
-            break;
-            
-        case 'error':
-            alert(msg.msg);
-            break;
-            
-        case 'chat':
-            // ✅ ФИКС: Добавляем сообщение только если отправитель не я
-            const myName = elements.onlineName.value.trim();
-            if (msg.sender !== myName) {
-                addChatMessage(msg.sender, msg.message);
+            if (isAIGame && currentPlayer === 'O') {
+                setTimeout(makeAIMove, 500);
             }
-            break;
-            
-        case 'rematch_vote':
-            // Уведомление о голосе за реванш
-            showError(`${msg.player_name} голосует за реванш (${msg.votes}/${msg.total_players})`);
-            break;
-            
-        case 'rematch_start':
-            // Начало реванша
-            gameState.online.board = msg.board || Array(9).fill('');
-            gameState.online.turn = msg.turn || 'X';
-            gameState.online.active = true;
-            renderBoard();
-            elements.status.textContent = `Реванш! Ход: ${msg.turn === 'X' ? '❌' : '⭕'}`;
-            showError(msg.message || "Реванш начинается!");
-            break;
-            
-        case 'opponent_left':
-            showError(msg.msg);
-            gameState.online.active = false;
-            break;
+        }
+    } else {
+        if (!wsConnection || !gameActive) {
+            showMessage('Сначала подключись к игре');
+            return;
+        }
+        
+        if (currentPlayer !== mySymbol) {
+            showMessage('Сейчас не ваш ход');
+            return;
+        }
+        
+        wsConnection.send(JSON.stringify({ 
+            type: 'move', 
+            index: index 
+        }));
     }
 }
 
-/* ====== Helper Functions ====== */
-function checkWin(board) {
-    const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function checkWinner() {
+    const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
     
-    for (const [a, b, c] of wins) {
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return { winner: board[a], combo: [a, b, c] };
+    for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+            return { winner: gameBoard[a], cells: pattern };
         }
     }
     
-    if (!board.includes('')) return { winner: 'D', combo: [] };
+    if (!gameBoard.includes('')) {
+        return { winner: 'T' };
+    }
+    
     return null;
 }
 
-function renderBoard() {
-    const board = gameState.mode === 'local' ? gameState.localGame.board : gameState.online.board;
-    const cells = document.querySelectorAll('.cell');
-    
-    board.forEach((value, i) => {
-        cells[i].textContent = value ? (value === 'X' ? '❌' : '⭕') : '';
-        cells[i].className = 'cell';
-        if (value === 'X') cells[i].classList.add('x');
-        if (value === 'O') cells[i].classList.add('o');
-    });
-}
-
 function handleGameEnd(result) {
-    if (result.winner === 'D') {
-        elements.status.textContent = 'Ничья 🤝';
-        gameState.scores.T++;
+    gameActive = false;
+    
+    if (result.winner === 'T') {
+        elements.status.textContent = 'Ничья! 🤝';
+        scores.T++;
     } else {
         elements.status.textContent = `Победил ${result.winner === 'X' ? '❌' : '⭕'}!`;
-        gameState.scores[result.winner]++;
+        scores[result.winner]++;
+        
+        // Подсветка выигрышной линии
+        result.cells.forEach(index => {
+            document.querySelector(`.cell[data-index="${index}"]`).classList.add('winner');
+        });
     }
+    
     updateScores();
 }
 
-function updateScores() {
-    elements.scoreX.textContent = gameState.scores.X;
-    elements.scoreO.textContent = gameState.scores.O;
-    elements.scoreT.textContent = gameState.scores.T;
+// ====== ИИ ======
+function startAIGame() {
+    isAIGame = true;
+    resetGame();
 }
 
-function toggleJoinPanel() {
+function makeAIMove() {
+    if (!gameActive || !isAIGame || currentPlayer !== 'O') return;
+    
+    const availableMoves = gameBoard
+        .map((cell, index) => cell === '' ? index : null)
+        .filter(index => index !== null);
+    
+    if (availableMoves.length > 0) {
+        const randomIndex = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+        makeMove(randomIndex);
+    }
+}
+
+// ====== ОНЛАЙН-РЕЖИМ ======
+async function createRoom() {
+    try {
+        const name = elements.onlineName.value || 'Неоновый воин';
+        const response = await fetch(BACKEND_BASE + '/create', { method: 'POST' });
+        const data = await response.json();
+        
+        roomCode = data.code;
+        elements.roomCode.value = roomCode;
+        elements.createPanel.classList.remove('hidden');
+        elements.joinPanel.classList.add('hidden');
+        
+        connectWebSocket(roomCode, name);
+        
+    } catch (error) {
+        showMessage('Ошибка создания комнаты');
+    }
+}
+
+function showJoinPanel() {
     elements.joinPanel.classList.toggle('hidden');
     elements.createPanel.classList.add('hidden');
 }
@@ -879,81 +771,179 @@ function joinRoom() {
         return;
     }
     
-    const name = elements.onlineName.value.trim() || 'Неоновый воин';
+    const name = elements.onlineName.value || 'Неоновый воин';
     elements.joinMsg.textContent = 'Соединяюсь...';
-    connectWS(code, name);
+    connectWebSocket(code, name);
 }
 
-function copyRoomCode() {
-    navigator.clipboard.writeText(elements.roomCode.value)
-        .then(() => {
-            elements.copyCode.textContent = '✅ Скопировано!';
-            setTimeout(() => {
-                elements.copyCode.textContent = '📋 Скопировать код';
-            }, 2000);
-        });
-}
-
-function resetAll() {
-    gameState.scores = { X: 0, O: 0, T: 0 };
-    updateScores();
-    resetBoard();
-    gameState.isPlayingWithAI = false;
+function connectWebSocket(code, name) {
+    const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name)}`;
     
-    if (gameState.mode === 'online' && gameState.online.ws) {
-        gameState.online.ws.close();
-        gameState.online.ws = null;
+    wsConnection = new WebSocket(wsUrl);
+    
+    wsConnection.onopen = () => {
+        elements.onlineInfo.textContent = 'Подключено, ожидаем соперника...';
+    };
+    
+    wsConnection.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            handleWebSocketMessage(message);
+        } catch (error) {
+            console.error('Ошибка парсинга сообщения:', error);
+        }
+    };
+    
+    wsConnection.onclose = () => {
+        elements.onlineInfo.textContent = 'Отключено';
+        gameActive = false;
+        stopTimer();
+    };
+    
+    wsConnection.onerror = (error) => {
+        elements.onlineInfo.textContent = 'Ошибка подключения';
+    };
+}
+
+function handleWebSocketMessage(message) {
+    console.log('Получено сообщение:', message);
+    
+    switch (message.type) {
+        case 'waiting':
+            elements.onlineInfo.textContent = 'Ожидаем соперника...';
+            mySymbol = message.your_symbol;
+            break;
+            
+        case 'ready':
+            gameActive = true;
+            mySymbol = message.your_symbol;
+            opponentName = message.opponent;
+            elements.opponentNameDisplay.textContent = opponentName;
+            elements.onlineInfo.textContent = `Игра началась! Вы играете за ${mySymbol}`;
+            updateStatus();
+            break;
+            
+        case 'state':
+            gameBoard = message.board;
+            currentPlayer = message.turn;
+            updateBoard();
+            updateStatus();
+            
+            if (message.winner) {
+                handleGameEnd({ winner: message.winner });
+            } else {
+                gameActive = true;
+            }
+            break;
+            
+        case 'chat':
+            addChatMessage(message.sender, message.message, false);
+            break;
+            
+        case 'error':
+            showMessage(message.msg);
+            break;
     }
 }
 
-function restartGame() {
-    if (gameState.mode === 'local') {
-        resetBoard();
-    } else if (gameState.mode === 'online' && gameState.online.ws) {
-        gameState.online.ws.send(JSON.stringify({ type: 'rematch' }));
-    }
+// ====== ЧАТ ======
+function sendChat() {
+    const message = elements.chatInput.value.trim();
+    if (!message || !wsConnection) return;
+    
+    wsConnection.send(JSON.stringify({ type: 'chat', message }));
+    addChatMessage('Вы', message, true);
+    elements.chatInput.value = '';
 }
 
-function addChatMessage(sender, message) {
+function addChatMessage(sender, message, isOwnMessage) {
     const messageEl = document.createElement('div');
-    messageEl.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    const senderColor = isOwnMessage ? '#00ffff' : '#ff00ff';
+    messageEl.innerHTML = `<strong style="color: ${senderColor}">${sender}:</strong> ${message}`;
     messageEl.style.marginBottom = '5px';
     elements.chatMessages.appendChild(messageEl);
     elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
 }
 
-function sendChat() {
-    const message = elements.chatInput.value.trim();
-    if (message && gameState.online.ws) {
-        gameState.online.ws.send(JSON.stringify({ type: 'chat', message }));
-        addChatMessage('Вы', message);
-        elements.chatInput.value = '';
-    }
+function clearChat() {
+    elements.chatMessages.innerHTML = '';
 }
 
+// ====== ТАЙМЕР ======
 function startTimer() {
     stopTimer();
-    gameState.online.timeLeft = 30;
-    elements.timer.textContent = gameState.online.timeLeft;
+    timeLeft = 30;
+    updateTimer();
     
-    gameState.online.timer = setInterval(() => {
-        gameState.online.timeLeft--;
-        elements.timer.textContent = gameState.online.timeLeft;
+    gameTimer = setInterval(() => {
+        timeLeft--;
+        updateTimer();
         
-        if (gameState.online.timeLeft <= 0) {
+        if (timeLeft <= 0) {
             stopTimer();
         }
     }, 1000);
 }
 
 function stopTimer() {
-    if (gameState.online.timer) {
-        clearInterval(gameState.online.timer);
-        gameState.online.timer = null;
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
     }
 }
 
-/* ====== Start the Game ====== */
+// ====== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ======
+function updateBoard() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        cell.textContent = gameBoard[index] ? (gameBoard[index] === 'X' ? '❌' : '⭕') : '';
+        cell.className = 'cell';
+        if (gameBoard[index] === 'X') cell.classList.add('x');
+        if (gameBoard[index] === 'O') cell.classList.add('o');
+    });
+}
+
+function updateStatus() {
+    elements.status.textContent = `Ход: ${currentPlayer === 'X' ? '❌' : '⭕'}`;
+}
+
+function updateTimer() {
+    elements.timer.textContent = timeLeft;
+}
+
+function updateScores() {
+    elements.scoreX.textContent = scores.X;
+    elements.scoreO.textContent = scores.O;
+    elements.scoreT.textContent = scores.T;
+}
+
+function updateDisplay() {
+    const name = currentMode === 'local' ? 
+        elements.localName.value : elements.onlineName.value;
+    elements.myNameDisplay.textContent = name || 'Неоновый воин';
+}
+
+function copyRoomCode() {
+    navigator.clipboard.writeText(roomCode).then(() => {
+        elements.copyCode.textContent = '✅ Скопировано!';
+        setTimeout(() => {
+            elements.copyCode.textContent = '📋 Скопировать код';
+        }, 2000);
+    });
+}
+
+function showMessage(message) {
+    elements.onlineInfo.textContent = message;
+    setTimeout(() => {
+        if (elements.onlineInfo.textContent === message) {
+            elements.onlineInfo.textContent = '';
+        }
+    }, 3000);
+}
+
+// ====== ЗАПУСК ИГРЫ ======
 document.addEventListener('DOMContentLoaded', initGame);
 </script>
 </body>
