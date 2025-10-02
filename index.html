@@ -315,7 +315,6 @@
     <div id="localMenu" class="screen">
         <div class="container">
             <h2>Локальная игра</h2>
-            <input type="text" id="localName" placeholder="Твой никнейм" class="input-field">
             <button class="btn" onclick="startLocalGame()">🎮 Начать игру</button>
             <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
         </div>
@@ -493,7 +492,7 @@
 
             // Обновляем имена игроков
             let myName = 'Игрок';
-            if (currentGame.mode === 'local') myName = document.getElementById('localName').value || 'Игрок';
+            if (currentGame.mode === 'local') myName = 'Воин';
             if (currentGame.mode === 'ai') myName = document.getElementById('aiName').value || 'Игрок';
             if (currentGame.mode === 'online') myName = onlineGame.myName || 'Игрок';
             
