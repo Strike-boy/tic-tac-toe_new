@@ -499,7 +499,7 @@
             document.getElementById('myNameDisplay').textContent = myName;
             document.getElementById('opponentNameDisplay').textContent = 
                 currentGame.mode === 'ai' ? '🤖 ИИ' : 
-                currentGame.mode === 'online' ? (onlineGame.opponentName || '—') : '—';
+                currentGame.mode === 'online' ? (onlineGame.opponentName || 'Боец') : 'Боец';
 
             // Скрываем/показываем чат
             document.getElementById('onlineChat').style.display = currentGame.mode === 'online' ? 'block' : 'none';
