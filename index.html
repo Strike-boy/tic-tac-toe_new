@@ -13,6 +13,7 @@
             --dark-bg: #0a0a1a;
             --darker-bg: #050510;
             --glass: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(0, 0, 0, 0.3);
         }
 
         * {
@@ -64,16 +65,26 @@
             border-radius: 20px;
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 50px rgba(255, 0, 255, 0.2);
+            box-shadow: 
+                0 0 50px rgba(255, 0, 255, 0.2),
+                0 0 100px rgba(0, 255, 255, 0.1);
         }
 
-        h1 {
+        h1, h2 {
             background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
-            font-size: 2.5rem;
             margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        h2 {
+            font-size: 1.8rem;
         }
 
         .btn {
@@ -85,13 +96,16 @@
             color: white;
             border-radius: 12px;
             font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .btn:hover {
             background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 255, 0.3);
         }
 
         .btn.neon-pink {
@@ -104,9 +118,23 @@
             border: 1px solid var(--neon-blue);
         }
 
+        .btn.neon-green {
+            background: linear-gradient(45deg, rgba(57, 255, 20, 0.2), rgba(20, 200, 20, 0.2));
+            border: 1px solid var(--neon-green);
+        }
+
         .btn-back {
-            background: rgba(255, 255, 255, 0.05);
+            width: auto;
+            padding: 10px 20px;
             margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-restart {
+            width: auto;
+            padding: 10px 20px;
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--neon-green);
         }
 
         .game-header {
@@ -114,11 +142,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .board {
             display: grid;
-            gap: 10px;
+            gap: 8px;
             margin: 20px 0;
             justify-content: center;
         }
@@ -142,10 +172,23 @@
 
         .cell:hover {
             background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .cell.x { color: var(--neon-pink); }
-        .cell.o { color: var(--neon-blue); }
+        .cell.x {
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .cell.o {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .cell.winner {
+            animation: pulse 1s infinite;
+            background: rgba(57, 255, 20, 0.1);
+        }
 
         .game-info {
             text-align: center;
@@ -154,8 +197,14 @@
 
         .status {
             font-size: 1.3rem;
+            font-weight: 600;
             color: var(--neon-green);
             margin-bottom: 10px;
+        }
+
+        .timer {
+            font-size: 1.1rem;
+            color: var(--neon-blue);
         }
 
         .score-board {
@@ -171,33 +220,111 @@
 
         .score-value {
             font-size: 1.4rem;
-            font-weight: bold;
+            font-weight: 700;
         }
 
-        .game-controls {
+        .chat-container {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .chat-messages {
+            height: 100px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .quick-reactions {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .reaction-btn {
+            flex: 1;
+            padding: 5px;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-input {
             display: flex;
             gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .settings-group {
             margin: 15px 0;
         }
 
-        .control-btn {
-            flex: 1;
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
             padding: 10px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            color: white;
-            text-align: center;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--neon-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
 
         @keyframes fadeIn {
@@ -205,14 +332,46 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes confetti {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            animation: confetti 2s ease-out forwards;
+        }
+
         @media (max-width: 600px) {
             .container {
                 margin: 10px;
                 padding: 20px;
             }
+            
             .board-3x3 { grid-template-columns: repeat(3, 70px); }
             .board-4x4 { grid-template-columns: repeat(4, 60px); }
             .board-5x5 { grid-template-columns: repeat(5, 50px); }
+            
+            .cell {
+                font-size: 1.5rem;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn-restart {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -223,36 +382,38 @@
     <div id="mainMenu" class="screen active">
         <div class="container">
             <h1>NEON TIC-TAC-TOE</h1>
-            <button class="btn neon-pink" onclick="showScreen('localMenu')">🎮 Локальная игра</button>
+            <button class="btn neon-pink" onclick="showScreen('localMenu')">👥 Локальная игра</button>
             <button class="btn neon-blue" onclick="showScreen('aiMenu')">🤖 Игра с ИИ</button>
-            <button class="btn" onclick="showScreen('onlineMenu')">🌐 Онлайн матч</button>
+            <button class="btn neon-green" onclick="showScreen('onlineMenu')">🌐 Онлайн матч</button>
             <button class="btn" onclick="showScreen('settings')">⚙️ Настройки</button>
         </div>
     </div>
 
-    <!-- Локальная игра -->
+    <!-- Меню локальной игры -->
     <div id="localMenu" class="screen">
         <div class="container">
             <h2>Локальная игра</h2>
-            <button class="btn" onclick="startGame('local', '3x3')">3x3 (Классика)</button>
-            <button class="btn" onclick="startGame('local', '4x4')">4x4 (Средний)</button>
-            <button class="btn" onclick="startGame('local', '5x5')">5x5 (Сложный)</button>
+            <button class="btn" onclick="startLocalGame('3x3')">3x3 (Классика)</button>
+            <button class="btn" onclick="startLocalGame('4x4')">4x4 (Средний)</button>
+            <button class="btn" onclick="startLocalGame('5x5')">5x5 (Сложный)</button>
             <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
         </div>
     </div>
 
-    <!-- Игра с ИИ -->
+    <!-- Меню ИИ -->
     <div id="aiMenu" class="screen">
         <div class="container">
-            <h2>Игра с ИИ</h2>
-            <button class="btn" onclick="startGame('ai-easy', '3x3')">🥉 Легкий (3x3)</button>
-            <button class="btn" onclick="startGame('ai-medium', '3x3')">🥈 Средний (3x3)</button>
-            <button class="btn" onclick="startGame('ai-hard', '3x3')">🥇 Сложный (3x3)</button>
+            <h2>Выбери сложность ИИ</h2>
+            <button class="btn" onclick="startAIGame('easy', '3x3')">😊 Легкий (3x3)</button>
+            <button class="btn" onclick="startAIGame('medium', '3x3')">😐 Средний (3x3)</button>
+            <button class="btn" onclick="startAIGame('hard', '3x3')">😠 Сложный (3x3)</button>
+            <button class="btn" onclick="startAIGame('medium', '4x4')">🧠 Эксперт (4x4)</button>
+            <button class="btn" onclick="startAIGame('hard', '5x5')">👑 Гений (5x5)</button>
             <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
         </div>
     </div>
 
-    <!-- Онлайн игра -->
+    <!-- Меню онлайн игры -->
     <div id="onlineMenu" class="screen">
         <div class="container">
             <h2>Онлайн матч</h2>
@@ -266,13 +427,19 @@
     <div id="createRoom" class="screen">
         <div class="container">
             <h2>Создать комнату</h2>
-            <input type="text" id="playerName" placeholder="Твой никнейм" value="Игрок">
-            <button class="btn neon-pink" onclick="createRoom()">Создать комнату</button>
-            <div id="roomInfo" class="hidden">
-                <div class="game-info">
-                    <p>Код комнаты: <strong id="roomCode"></strong></p>
-                    <button class="btn" onclick="copyRoomCode()">📋 Скопировать код</button>
-                </div>
+            <div class="setting-item">
+                <span>Размер поля:</span>
+                <select id="roomSize">
+                    <option value="3x3">3x3</option>
+                    <option value="4x4">4x4</option>
+                    <option value="5x5">5x5</option>
+                </select>
+            </div>
+            <input type="text" id="playerName" placeholder="Твой никнейм" class="btn" style="text-align: center;">
+            <button class="btn neon-pink" onclick="createRoom()">Создать</button>
+            <div id="roomInfo" class="game-info" style="display: none;">
+                <p>Код комнаты: <strong id="roomCode"></strong></p>
+                <button class="btn" onclick="copyRoomCode()">📋 Скопировать код</button>
             </div>
             <button class="btn btn-back" onclick="showScreen('onlineMenu')">← Назад</button>
         </div>
@@ -282,8 +449,8 @@
     <div id="joinRoom" class="screen">
         <div class="container">
             <h2>Присоединиться к комнате</h2>
-            <input type="text" id="joinPlayerName" placeholder="Твой никнейм" value="Игрок">
-            <input type="text" id="joinCodeInput" placeholder="Код комнаты">
+            <input type="text" id="joinPlayerName" placeholder="Твой никнейм" class="btn" style="text-align: center;">
+            <input type="text" id="joinCodeInput" placeholder="Код комнаты" class="btn" style="text-align: center;">
             <button class="btn neon-blue" onclick="joinRoom()">Присоединиться</button>
             <div id="joinStatus" class="game-info"></div>
             <button class="btn btn-back" onclick="showScreen('onlineMenu')">← Назад</button>
@@ -294,11 +461,30 @@
     <div id="settings" class="screen">
         <div class="container">
             <h2>Настройки</h2>
-            <div class="game-info">
-                <label>
-                    <input type="checkbox" id="soundToggle" checked> 🔊 Звуковые эффекты
-                </label>
+            
+            <div class="settings-group">
+                <h3>Звуки</h3>
+                <div class="setting-item">
+                    <span>🔊 Звуковые эффекты</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
+
+            <div class="settings-group">
+                <h3>Внешний вид</h3>
+                <div class="setting-item">
+                    <span>Размер поля по умолчанию</span>
+                    <select id="defaultBoardSize">
+                        <option value="3x3">3x3</option>
+                        <option value="4x4">4x4</option>
+                        <option value="5x5">5x5</option>
+                    </select>
+                </div>
+            </div>
+
             <button class="btn btn-back" onclick="showScreen('mainMenu')">← Назад</button>
         </div>
     </div>
@@ -309,10 +495,12 @@
             <div class="game-header">
                 <button class="btn btn-back" onclick="returnToMenu()">🏠 Меню</button>
                 <div id="gameMode"></div>
+                <button class="btn btn-restart" onclick="restartGame()" style="display: none;" id="restartBtn">🔄 Рестарт</button>
             </div>
 
             <div class="game-info">
                 <div class="status" id="gameStatus">Ход: ❌</div>
+                <div class="timer" id="gameTimer">--</div>
             </div>
 
             <div class="board" id="gameBoard">
@@ -334,23 +522,36 @@
                 </div>
             </div>
 
-            <div class="game-controls">
-                <button class="btn control-btn" onclick="restartGame()">🔄 Рестарт</button>
+            <!-- Чат (только для онлайн режима) -->
+            <div id="onlineChat" class="chat-container" style="display: none;">
+                <div class="quick-reactions">
+                    <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
+                    <button class="reaction-btn" onclick="sendReaction('👎')">👎</button>
+                    <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+                    <button class="reaction-btn" onclick="sendReaction('😮')">😮</button>
+                    <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Сообщение...">
+                    <button class="btn" onclick="sendMessage()">📨</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ====== КОНСТАНТЫ ======
+        // ====== КОНФИГУРАЦИЯ ======
         const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com";
 
-        // ====== ПЕРЕМЕННЫЕ ======
+        // ====== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ======
         let currentGame = {
-            mode: null, // 'local', 'ai-easy', 'ai-medium', 'ai-hard', 'online'
+            mode: null, // 'local', 'ai', 'online'
             boardSize: '3x3',
             board: [],
             currentPlayer: 'X',
             gameActive: false,
+            aiDifficulty: null,
             scores: { X: 0, O: 0, T: 0 }
         };
 
@@ -362,7 +563,48 @@
             connected: false
         };
 
-        let soundEnabled = true;
+        let soundManager = {
+            enabled: true,
+            sounds: {},
+            init: function() {
+                // Создаем звуковые эффекты программно (без файлов)
+                this.sounds.click = this.createSound(800, 0.1);
+                this.sounds.win = this.createSound(600, 0.3);
+                this.sounds.move = this.createSound(400, 0.2);
+            },
+            createSound: function(freq, duration) {
+                return {
+                    play: function() {
+                        if (!soundManager.enabled) return;
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioCtx.createOscillator();
+                        const gainNode = audioCtx.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioCtx.destination);
+                        
+                        oscillator.frequency.value = freq;
+                        oscillator.type = 'sine';
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                        
+                        oscillator.start(audioCtx.currentTime);
+                        oscillator.stop(audioCtx.currentTime + duration);
+                    }
+                };
+            },
+            play: function(soundName) {
+                if (this.sounds[soundName]) {
+                    this.sounds[soundName].play();
+                }
+            },
+            toggle: function() {
+                this.enabled = !this.enabled;
+                document.getElementById('soundToggle').checked = this.enabled;
+                return this.enabled;
+            }
+        };
 
         // ====== УПРАВЛЕНИЕ ЭКРАНАМИ ======
         function showScreen(screenId) {
@@ -376,41 +618,79 @@
             if (onlineGame.ws) {
                 onlineGame.ws.close();
                 onlineGame.ws = null;
+                onlineGame.connected = false;
             }
+            
+            document.getElementById('restartBtn').style.display = 'none';
             showScreen('mainMenu');
+            currentGame.gameActive = false;
         }
 
         // ====== ИНИЦИАЛИЗАЦИЯ ИГРЫ ======
-        function startGame(mode, boardSize) {
-            currentGame.mode = mode;
-            currentGame.boardSize = boardSize;
-            currentGame.board = createEmptyBoard(boardSize);
-            currentGame.currentPlayer = 'X';
-            currentGame.gameActive = true;
+        function initGame() {
+            soundManager.init();
+            loadSettings();
+            showScreen('mainMenu');
+        }
 
-            setupGameBoard();
-            updateGameDisplay();
-            showScreen('gameScreen');
-
-            // Установка текста режима
-            const modeText = getModeText(mode, boardSize);
-            document.getElementById('gameMode').textContent = modeText;
-
-            // Если это ИИ и он ходит первым
-            if (mode.startsWith('ai') && currentGame.currentPlayer === 'O') {
-                setTimeout(makeAIMove, 500);
+        function loadSettings() {
+            const savedSound = localStorage.getItem('soundEnabled');
+            if (savedSound !== null) {
+                soundManager.enabled = JSON.parse(savedSound);
+                document.getElementById('soundToggle').checked = soundManager.enabled;
+            }
+            
+            const savedSize = localStorage.getItem('defaultBoardSize');
+            if (savedSize) {
+                document.getElementById('defaultBoardSize').value = savedSize;
             }
         }
 
-        function createEmptyBoard(boardSize) {
-            const size = parseInt(boardSize[0]);
-            return Array(size * size).fill('');
+        function saveSettings() {
+            localStorage.setItem('soundEnabled', JSON.stringify(soundManager.enabled));
+            localStorage.setItem('defaultBoardSize', document.getElementById('defaultBoardSize').value);
         }
 
-        function setupGameBoard() {
-            const board = document.getElementById('gameBoard');
+        // ====== ЛОКАЛЬНАЯ ИГРА ======
+        function startLocalGame(size) {
+            currentGame.mode = 'local';
+            currentGame.boardSize = size;
+            currentGame.aiDifficulty = null;
+            setupGame();
+        }
+
+        function startAIGame(difficulty, size) {
+            currentGame.mode = 'ai';
+            currentGame.boardSize = size;
+            currentGame.aiDifficulty = difficulty;
+            setupGame();
+        }
+
+        function setupGame() {
             const size = parseInt(currentGame.boardSize[0]);
+            currentGame.board = Array(size * size).fill('');
+            currentGame.currentPlayer = 'X';
+            currentGame.gameActive = true;
+
+            createBoard(size);
+            updateBoard();
+            updateGameDisplay();
+            showScreen('gameScreen');
+
+            const modeText = currentGame.mode === 'ai' ? 
+                `ИИ: ${getDifficultyName(currentGame.aiDifficulty)} (${currentGame.boardSize})` :
+                currentGame.mode === 'online' ?
+                `Онлайн vs ${onlineGame.opponentName || '...'}` :
+                `Локально (${currentGame.boardSize})`;
             
+            document.getElementById('gameMode').textContent = modeText;
+
+            document.getElementById('onlineChat').style.display = currentGame.mode === 'online' ? 'block' : 'none';
+            document.getElementById('restartBtn').style.display = 'block';
+        }
+
+        function createBoard(size) {
+            const board = document.getElementById('gameBoard');
             board.innerHTML = '';
             board.className = `board board-${size}x${size}`;
 
@@ -423,39 +703,21 @@
             }
         }
 
-        // ====== ИГРОВАЯ ЛОГИКА ======
         function makeMove(index) {
-            if (!currentGame.gameActive) return;
-            if (currentGame.board[index] !== '') return;
+            if (!currentGame.gameActive || currentGame.board[index] !== '') return;
 
-            // Для онлайн-игры
-            if (currentGame.mode === 'online') {
-                if (!onlineGame.connected || currentGame.currentPlayer !== onlineGame.mySymbol) {
-                    showMessage('Сейчас не ваш ход');
-                    return;
-                }
-                
-                onlineGame.ws.send(JSON.stringify({ 
-                    type: 'move', 
-                    index: index 
-                }));
-                return;
-            }
-
-            // Для локальной игры и ИИ
+            soundManager.play('click');
             currentGame.board[index] = currentGame.currentPlayer;
             updateBoard();
-            playSound('move');
 
-            const winner = checkWinner();
-            if (winner) {
-                endGame(winner);
+            const result = checkWinner();
+            if (result) {
+                handleGameEnd(result);
             } else {
                 currentGame.currentPlayer = currentGame.currentPlayer === 'X' ? 'O' : 'X';
                 updateGameDisplay();
 
-                // Ход ИИ
-                if (currentGame.mode.startsWith('ai') && currentGame.currentPlayer === 'O') {
+                if (currentGame.mode === 'ai' && currentGame.currentPlayer === 'O') {
                     setTimeout(makeAIMove, 500);
                 }
             }
@@ -464,37 +726,25 @@
         function makeAIMove() {
             if (!currentGame.gameActive || currentGame.currentPlayer !== 'O') return;
 
-            const difficulty = currentGame.mode.split('-')[1] || 'medium';
-            const move = getAIMove(difficulty);
-            
+            const move = getAIMove();
             if (move !== -1) {
-                currentGame.board[move] = 'O';
-                updateBoard();
-                playSound('move');
-
-                const winner = checkWinner();
-                if (winner) {
-                    endGame(winner);
-                } else {
-                    currentGame.currentPlayer = 'X';
-                    updateGameDisplay();
-                }
+                makeMove(move);
             }
         }
 
-        function getAIMove(difficulty) {
+        function getAIMove() {
+            const size = parseInt(currentGame.boardSize[0]);
             const emptyCells = currentGame.board
                 .map((cell, index) => cell === '' ? index : -1)
                 .filter(index => index !== -1);
 
             if (emptyCells.length === 0) return -1;
 
-            switch (difficulty) {
+            switch (currentGame.aiDifficulty) {
                 case 'easy':
                     return emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
                 case 'medium':
-                    // Пытается выиграть или блокировать
                     const winMove = findWinningMove('O');
                     if (winMove !== -1) return winMove;
 
@@ -504,7 +754,17 @@
                     return emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
                 case 'hard':
-                    return findBestMove();
+                    if (size === 3) {
+                        return minimax(currentGame.board, 'O').index;
+                    } else {
+                        const winMove = findWinningMove('O');
+                        if (winMove !== -1) return winMove;
+
+                        const blockMove = findWinningMove('X');
+                        if (blockMove !== -1) return blockMove;
+
+                        return getStrategicMove(size, emptyCells);
+                    }
             }
 
             return emptyCells[0];
@@ -512,26 +772,22 @@
 
         function findWinningMove(player) {
             const size = parseInt(currentGame.boardSize[0]);
-            
+            const winLength = size === 3 ? 3 : size === 4 ? 3 : 4;
+
             for (let i = 0; i < currentGame.board.length; i++) {
                 if (currentGame.board[i] === '') {
                     currentGame.board[i] = player;
-                    const winner = checkWinner();
+                    if (checkWinner()) {
+                        currentGame.board[i] = '';
+                        return i;
+                    }
                     currentGame.board[i] = '';
-                    
-                    if (winner === player) return i;
                 }
             }
             return -1;
         }
 
-        function findBestMove() {
-            const emptyCells = currentGame.board
-                .map((cell, index) => cell === '' ? index : -1)
-                .filter(index => index !== -1);
-
-            // Предпочтение центру и углам
-            const size = parseInt(currentGame.boardSize[0]);
+        function getStrategicMove(size, emptyCells) {
             const center = Math.floor(size * size / 2);
             if (emptyCells.includes(center)) return center;
 
@@ -543,233 +799,123 @@
             return emptyCells[Math.floor(Math.random() * emptyCells.length)];
         }
 
+        // ====== МИНИМАКС АЛГОРИТМ ======
+        function minimax(newBoard, player) {
+            const size = 3;
+            const winLength = 3;
+
+            const winner = checkWinner();
+            if (winner === 'X') return { score: -10 };
+            if (winner === 'O') return { score: 10 };
+            if (winner === 'T') return { score: 0 };
+
+            const emptyCells = newBoard.map((cell, index) => cell === '' ? index : -1).filter(i => i !== -1);
+            if (emptyCells.length === 0) return { score: 0 };
+
+            const moves = [];
+            for (const index of emptyCells) {
+                const move = { index: index };
+                newBoard[index] = player;
+
+                if (player === 'O') {
+                    const result = minimax(newBoard, 'X');
+                    move.score = result.score;
+                } else {
+                    const result = minimax(newBoard, 'O');
+                    move.score = result.score;
+                }
+
+                newBoard[index] = '';
+                moves.push(move);
+            }
+
+            let bestMove;
+            if (player === 'O') {
+                let bestScore = -Infinity;
+                for (const move of moves) {
+                    if (move.score > bestScore) {
+                        bestScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            } else {
+                let bestScore = Infinity;
+                for (const move of moves) {
+                    if (move.score < bestScore) {
+                        bestScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            }
+
+            return bestMove;
+        }
+
         function checkWinner() {
             const size = parseInt(currentGame.boardSize[0]);
-            const board = currentGame.board;
+            const winLength = size === 3 ? 3 : size === 4 ? 3 : 4;
 
-            // Проверка строк
             for (let row = 0; row < size; row++) {
-                for (let col = 0; col <= size - 3; col++) {
-                    const idx = row * size + col;
-                    if (board[idx] && 
-                        board[idx] === board[idx + 1] && 
-                        board[idx] === board[idx + 2]) {
-                        return board[idx];
+                for (let col = 0; col <= size - winLength; col++) {
+                    const player = currentGame.board[row * size + col];
+                    if (player && Array.from({length: winLength}, (_, i) => currentGame.board[row * size + col + i])
+                        .every(cell => cell === player)) {
+                        return player;
                     }
                 }
             }
 
-            // Проверка столбцов
             for (let col = 0; col < size; col++) {
-                for (let row = 0; row <= size - 3; row++) {
-                    const idx = row * size + col;
-                    if (board[idx] && 
-                        board[idx] === board[idx + size] && 
-                        board[idx] === board[idx + 2 * size]) {
-                        return board[idx];
+                for (let row = 0; row <= size - winLength; row++) {
+                    const player = currentGame.board[row * size + col];
+                    if (player && Array.from({length: winLength}, (_, i) => currentGame.board[(row + i) * size + col])
+                        .every(cell => cell === player)) {
+                        return player;
                     }
                 }
             }
 
-            // Проверка диагоналей
-            for (let row = 0; row <= size - 3; row++) {
-                for (let col = 0; col <= size - 3; col++) {
-                    const idx = row * size + col;
-                    if (board[idx] && 
-                        board[idx] === board[idx + size + 1] && 
-                        board[idx] === board[idx + 2 * size + 2]) {
-                        return board[idx];
+            for (let row = 0; row <= size - winLength; row++) {
+                for (let col = 0; col <= size - winLength; col++) {
+                    const player = currentGame.board[row * size + col];
+                    if (player && Array.from({length: winLength}, (_, i) => currentGame.board[(row + i) * size + col + i])
+                        .every(cell => cell === player)) {
+                        return player;
                     }
                 }
             }
 
-            // Проверка обратных диагоналей
-            for (let row = 0; row <= size - 3; row++) {
-                for (let col = 2; col < size; col++) {
-                    const idx = row * size + col;
-                    if (board[idx] && 
-                        board[idx] === board[idx + size - 1] && 
-                        board[idx] === board[idx + 2 * size - 2]) {
-                        return board[idx];
+            for (let row = 0; row <= size - winLength; row++) {
+                for (let col = winLength - 1; col < size; col++) {
+                    const player = currentGame.board[row * size + col];
+                    if (player && Array.from({length: winLength}, (_, i) => currentGame.board[(row + i) * size + col - i])
+                        .every(cell => cell === player)) {
+                        return player;
                     }
                 }
             }
 
-            // Ничья
-            if (!board.includes('')) return 'T';
+            if (!currentGame.board.includes('')) return 'T';
 
             return null;
         }
 
-        function endGame(winner) {
+        function handleGameEnd(result) {
             currentGame.gameActive = false;
-            playSound('win');
+            soundManager.play('win');
 
-            if (winner === 'T') {
+            if (result === 'T') {
                 document.getElementById('gameStatus').textContent = 'Ничья! 🤝';
                 currentGame.scores.T++;
             } else {
-                document.getElementById('gameStatus').textContent = 
-                    `Победил ${winner === 'X' ? '❌' : '⭕'}!`;
-                currentGame.scores[winner]++;
+                document.getElementById('gameStatus').textContent = `Победил ${result === 'X' ? '❌' : '⭕'}!`;
+                currentGame.scores[result]++;
+                createConfetti();
             }
 
             updateScores();
         }
 
-        function restartGame() {
-            if (currentGame.mode === 'online') {
-                if (onlineGame.connected) {
-                    onlineGame.ws.send(JSON.stringify({ type: 'rematch' }));
-                }
-            } else {
-                currentGame.board = createEmptyBoard(currentGame.boardSize);
-                currentGame.currentPlayer = 'X';
-                currentGame.gameActive = true;
-                
-                updateBoard();
-                updateGameDisplay();
-
-                if (currentGame.mode.startsWith('ai') && currentGame.currentPlayer === 'O') {
-                    setTimeout(makeAIMove, 500);
-                }
-            }
-        }
-
-        // ====== ОНЛАЙН-ИГРА ======
-        async function createRoom() {
-            const playerName = document.getElementById('playerName').value || 'Игрок';
-            
-            try {
-                const response = await fetch(BACKEND_BASE + '/create', { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ board_size: '3x3' })
-                });
-                
-                if (!response.ok) throw new Error('Network error');
-                
-                const data = await response.json();
-                onlineGame.roomCode = data.code;
-                
-                document.getElementById('roomCode').textContent = data.code;
-                document.getElementById('roomInfo').classList.remove('hidden');
-                
-                connectWebSocket(data.code, playerName);
-                
-            } catch (error) {
-                showMessage('Ошибка создания комнаты');
-            }
-        }
-
-        function joinRoom() {
-            const playerName = document.getElementById('joinPlayerName').value || 'Игрок';
-            const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-            
-            if (!code) {
-                showMessage('Введите код комнаты');
-                return;
-            }
-
-            document.getElementById('joinStatus').textContent = 'Соединяюсь...';
-            connectWebSocket(code, playerName);
-        }
-
-        function connectWebSocket(code, name) {
-            const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name)}`;
-            
-            onlineGame.ws = new WebSocket(wsUrl);
-            onlineGame.roomCode = code;
-            
-            onlineGame.ws.onopen = () => {
-                showMessage('Подключено, ожидаем соперника...');
-            };
-            
-            onlineGame.ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    handleWebSocketMessage(message);
-                } catch (error) {
-                    console.error('Ошибка парсинга:', error);
-                }
-            };
-            
-            onlineGame.ws.onclose = () => {
-                onlineGame.connected = false;
-                if (currentGame.mode === 'online') {
-                    showMessage('Соединение разорвано');
-                }
-            };
-            
-            onlineGame.ws.onerror = (error) => {
-                showMessage('Ошибка подключения');
-            };
-        }
-
-        function handleWebSocketMessage(message) {
-            console.log('Получено:', message);
-            
-            switch (message.type) {
-                case 'waiting':
-                    showMessage('Ожидаем соперника...');
-                    onlineGame.mySymbol = message.your_symbol;
-                    break;
-                    
-                case 'ready':
-                    currentGame.mode = 'online';
-                    currentGame.boardSize = message.board_size || '3x3';
-                    currentGame.board = message.board || [];
-                    currentGame.currentPlayer = message.turn;
-                    currentGame.gameActive = true;
-                    
-                    onlineGame.mySymbol = message.your_symbol;
-                    onlineGame.opponentName = message.opponent;
-                    onlineGame.connected = true;
-                    
-                    setupGameBoard();
-                    updateBoard();
-                    updateGameDisplay();
-                    showScreen('gameScreen');
-                    
-                    document.getElementById('gameMode').textContent = 
-                        `Онлайн vs ${onlineGame.opponentName}`;
-                    break;
-                    
-                case 'move_made':
-                    currentGame.board = message.board;
-                    currentGame.currentPlayer = message.turn;
-                    updateBoard();
-                    updateGameDisplay();
-                    playSound('move');
-                    break;
-                    
-                case 'game_end':
-                    currentGame.gameActive = false;
-                    document.getElementById('gameStatus').textContent = message.message;
-                    
-                    if (message.winner && message.winner !== 'D') {
-                        currentGame.scores[message.winner]++;
-                        updateScores();
-                        playSound('win');
-                    }
-                    break;
-                    
-                case 'error':
-                    showMessage(message.msg);
-                    break;
-            }
-        }
-
-        function copyRoomCode() {
-            navigator.clipboard.writeText(onlineGame.roomCode);
-            showMessage('Код скопирован!');
-        }
-
-        // ====== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======
         function updateBoard() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
@@ -792,81 +938,222 @@
             document.getElementById('scoreT').textContent = currentGame.scores.T;
         }
 
-        function getModeText(mode, boardSize) {
-            const modes = {
-                'local': 'Локальная игра',
-                'ai-easy': 'ИИ: Легкий',
-                'ai-medium': 'ИИ: Средний', 
-                'ai-hard': 'ИИ: Сложный',
-                'online': 'Онлайн игра'
-            };
-            return `${modes[mode]} (${boardSize})`;
+        // ====== РЕСТАРТ ИГРЫ ======
+        function restartGame() {
+            if (currentGame.mode === 'online') {
+                if (onlineGame.ws && onlineGame.connected) {
+                    onlineGame.ws.send(JSON.stringify({ type: 'rematch' }));
+                }
+            } else {
+                setupGame();
+            }
         }
 
-        function playSound(type) {
-            if (!soundEnabled) return;
-            
-            // Простые звуковые эффекты через Web Audio API
+        // ====== ОНЛАЙН-РЕЖИМ ======
+        async function createRoom() {
+            const playerName = document.getElementById('playerName').value || 'Игрок';
+            const roomSize = document.getElementById('roomSize').value;
+
             try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const response = await fetch(BACKEND_BASE + '/create', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ board_size: roomSize })
+                });
                 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                let frequency = 800;
-                let duration = 0.1;
-                
-                if (type === 'win') {
-                    frequency = 600;
-                    duration = 0.5;
+                if (!response.ok) {
+                    throw new Error('Ошибка сервера');
                 }
                 
-                oscillator.frequency.value = frequency;
-                oscillator.type = 'sine';
+                const data = await response.json();
                 
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                onlineGame.roomCode = data.code;
+                document.getElementById('roomCode').textContent = data.code;
+                document.getElementById('roomInfo').style.display = 'block';
                 
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + duration);
-            } catch (e) {
-                console.log('Audio not supported');
+                connectWebSocket(data.code, playerName);
+                
+            } catch (error) {
+                alert('Ошибка создания комнаты: ' + error.message);
             }
         }
 
-        function showMessage(message) {
-            const statusElement = document.getElementById('joinStatus') || 
-                                document.getElementById('gameStatus');
-            if (statusElement) {
-                statusElement.textContent = message;
-            }
-        }
-
-        // ====== ИНИЦИАЛИЗАЦИЯ ======
-        document.addEventListener('DOMContentLoaded', () => {
-            // Настройка звука
-            const soundToggle = document.getElementById('soundToggle');
-            if (soundToggle) {
-                soundToggle.addEventListener('change', (e) => {
-                    soundEnabled = e.target.checked;
-                });
-            }
+        async function joinRoom() {
+            const playerName = document.getElementById('joinPlayerName').value || 'Игрок';
+            const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
             
-            // Загрузка сохраненных настроек
-            const savedSound = localStorage.getItem('soundEnabled');
-            if (savedSound !== null) {
-                soundEnabled = JSON.parse(savedSound);
-                if (soundToggle) soundToggle.checked = soundEnabled;
+            if (!code) {
+                document.getElementById('joinStatus').textContent = 'Введите код комнаты';
+                return;
             }
+
+            try {
+                document.getElementById('joinStatus').textContent = 'Проверяем комнату...';
+                const response = await fetch(`${BACKEND_BASE}/room/${code}`);
+                
+                if (!response.ok) {
+                    document.getElementById('joinStatus').textContent = 'Комната не найдена';
+                    return;
+                }
+                
+                document.getElementById('joinStatus').textContent = 'Комната найдена, подключаемся...';
+                connectWebSocket(code, playerName);
+                
+            } catch (error) {
+                document.getElementById('joinStatus').textContent = 'Ошибка подключения к серверу';
+            }
+        }
+
+        function connectWebSocket(code, name) {
+            const backendHost = BACKEND_BASE.replace(/^https?:\/\//, '');
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${backendHost}/ws/${code}?name=${encodeURIComponent(name)}`;
+            
+            onlineGame.ws = new WebSocket(wsUrl);
+            
+            onlineGame.ws.onopen = () => {
+                document.getElementById('joinStatus').textContent = 'Подключено, ожидаем соперника...';
+            };
+            
+            onlineGame.ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleOnlineMessage(message);
+            };
+            
+            onlineGame.ws.onclose = () => {
+                document.getElementById('gameStatus').textContent = 'Соединение разорвано';
+                onlineGame.connected = false;
+            };
+            
+            onlineGame.ws.onerror = (error) => {
+                document.getElementById('joinStatus').textContent = 'Ошибка подключения';
+            };
+        }
+
+        function handleOnlineMessage(message) {
+            switch (message.type) {
+                case 'ready':
+                    currentGame.mode = 'online';
+                    currentGame.boardSize = message.board_size || '3x3';
+                    currentGame.gameActive = true;
+                    onlineGame.mySymbol = message.your_symbol;
+                    onlineGame.opponentName = message.opponent;
+                    onlineGame.connected = true;
+
+                    setupGame();
+                    document.getElementById('onlineChat').style.display = 'block';
+                    document.getElementById('gameMode').textContent = `Онлайн vs ${onlineGame.opponentName}`;
+                    break;
+
+                case 'move_made':
+                    currentGame.board = message.board;
+                    currentGame.currentPlayer = message.turn;
+                    updateBoard();
+                    updateGameDisplay();
+                    break;
+
+                case 'game_end':
+                    currentGame.board = message.board || currentGame.board;
+                    currentGame.gameActive = false;
+                    updateBoard();
+                    
+                    if (message.winner) {
+                        handleGameEnd(message.winner);
+                    }
+                    break;
+
+                case 'rematch_start':
+                    currentGame.board = message.board;
+                    currentGame.currentPlayer = message.turn;
+                    currentGame.gameActive = true;
+                    updateBoard();
+                    updateGameDisplay();
+                    document.getElementById('gameStatus').textContent = `Реванш! Ход: ${currentGame.currentPlayer === 'X' ? '❌' : '⭕'}`;
+                    break;
+
+                case 'rematch_vote':
+                    document.getElementById('gameStatus').textContent = 
+                        `${message.player_name} хочет реванш (${message.votes}/${message.required})`;
+                    break;
+
+                case 'player_left':
+                    document.getElementById('gameStatus').textContent = message.message;
+                    currentGame.gameActive = false;
+                    break;
+
+                case 'chat_message':
+                    addChatMessage(message.sender, message.message, message.sender !== onlineGame.opponentName);
+                    break;
+
+                case 'error':
+                    document.getElementById('gameStatus').textContent = message.msg;
+                    break;
+            }
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('chatInput').value.trim();
+            if (message && onlineGame.ws) {
+                onlineGame.ws.send(JSON.stringify({ type: 'chat', message }));
+                addChatMessage('Вы', message, true);
+                document.getElementById('chatInput').value = '';
+            }
+        }
+
+        function sendReaction(emoji) {
+            if (onlineGame.ws) {
+                onlineGame.ws.send(JSON.stringify({ type: 'chat', message: emoji }));
+                addChatMessage('Вы', emoji, true);
+            }
+        }
+
+        function addChatMessage(sender, message, isOwn) {
+            const chat = document.getElementById('chatMessages');
+            const messageEl = document.createElement('div');
+            messageEl.innerHTML = `<strong style="color: ${isOwn ? '#00ffff' : '#ff00ff'}">${sender}:</strong> ${message}`;
+            chat.appendChild(messageEl);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function copyRoomCode() {
+            navigator.clipboard.writeText(onlineGame.roomCode);
+            alert('Код скопирован!');
+        }
+
+        // ====== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======
+        function getDifficultyName(difficulty) {
+            const names = { easy: 'Легкий', medium: 'Средний', hard: 'Сложный' };
+            return names[difficulty] || difficulty;
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = [
+                        '#ff00ff', '#00ffff', '#39ff14', '#bf00ff'
+                    ][Math.floor(Math.random() * 4)];
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 2000);
+                }, i * 50);
+            }
+        }
+
+        // ====== ОБРАБОТЧИКИ СОБЫТИЙ ======
+        document.getElementById('soundToggle').addEventListener('change', function() {
+            soundManager.enabled = this.checked;
+            saveSettings();
         });
 
-        // Сохранение настроек при изменении
-        document.getElementById('soundToggle')?.addEventListener('change', function() {
-            soundEnabled = this.checked;
-            localStorage.setItem('soundEnabled', JSON.stringify(soundEnabled));
-        });
+        document.getElementById('defaultBoardSize').addEventListener('change', saveSettings);
+
+        // ====== ЗАПУСК ПРИЛОЖЕНИЯ ======
+        document.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>
 </html>
