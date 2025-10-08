@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>NEON Tic-Tac-Toe Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --neon-pink: #ff00ff;
@@ -14,20 +15,26 @@
             --darker-bg: #050510;
             --glass: rgba(255, 255, 255, 0.05);
             --card-bg: rgba(0, 0, 0, 0.3);
+            --tg-theme-bg-color: var(--darker-bg);
+            --tg-theme-text-color: white;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--darker-bg);
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, var(--darker-bg));
+            color: var(--tg-theme-text-color, white);
             min-height: 100vh;
             overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .background {
@@ -74,6 +81,7 @@
             background: linear-gradient(45deg, var(--neon-pink), var(--neon-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             text-align: center;
             margin-bottom: 30px;
         }
@@ -85,6 +93,15 @@
 
         h2 {
             font-size: 1.8rem;
+        }
+
+        .telegram-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
         }
 
         .btn {
@@ -100,6 +117,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
         }
 
         .btn:hover {
@@ -164,6 +186,11 @@
             font-size: 3rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            touch-action: manipulation;
+        }
+
+        .cell:active {
+            transform: scale(0.95);
         }
 
         .cell:hover {
@@ -264,19 +291,6 @@
             50% { transform: scale(1.05); }
         }
 
-        @keyframes confetti {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            pointer-events: none;
-            animation: confetti 2s ease-out forwards;
-        }
-
         @media (max-width: 600px) {
             .container {
                 margin: 10px;
@@ -305,9 +319,13 @@
     <div id="mainMenu" class="screen active">
         <div class="container">
             <h1>NEON TIC-TAC-TOE</h1>
+            <div class="telegram-info" id="tgInfo">
+                <div id="userInfo">🔄 Загрузка...</div>
+            </div>
             <button class="btn neon-pink" onclick="showScreen('localMenu')">👥 Локальная игра</button>
             <button class="btn neon-blue" onclick="showScreen('aiMenu')">🤖 Игра с ИИ</button>
             <button class="btn neon-green" onclick="showScreen('onlineMenu')">🌐 Онлайн матч</button>
+            <button class="btn" onclick="shareGame()">📤 Поделиться</button>
         </div>
     </div>
 
@@ -324,7 +342,6 @@
     <div id="aiMenu" class="screen">
         <div class="container">
             <h2>Игра с ИИ</h2>
-            <input type="text" id="aiName" placeholder="Твой никнейм" class="input-field">
             <button class="btn" onclick="startAIGame('easy')">😊 Легкий уровень</button>
             <button class="btn" onclick="startAIGame('medium')">😐 Средний уровень</button>
             <button class="btn" onclick="startAIGame('hard')">😠 Сложный уровень</button>
@@ -346,12 +363,11 @@
     <div id="createRoom" class="screen">
         <div class="container">
             <h2>Создать комнату</h2>
-            <input type="text" id="createName" placeholder="Твой никнейм" class="input-field">
             <button class="btn neon-pink" onclick="createRoom()">Создать комнату</button>
             <div id="roomInfo" class="game-info" style="display: none;">
                 <p>Код комнаты: <strong id="roomCode"></strong></p>
                 <p>Ожидаем соперника...</p>
-                <button class="btn" onclick="copyRoomCode()">📋 Скопировать код</button>
+                <button class="btn" onclick="shareRoom()">📤 Пригласить друга</button>
             </div>
             <button class="btn btn-back" onclick="showScreen('onlineMenu')">← Назад</button>
         </div>
@@ -361,7 +377,6 @@
     <div id="joinRoom" class="screen">
         <div class="container">
             <h2>Присоединиться к комнате</h2>
-            <input type="text" id="joinName" placeholder="Твой никнейм" class="input-field">
             <input type="text" id="joinCodeInput" placeholder="Код комнаты" class="input-field">
             <button class="btn neon-blue" onclick="joinRoom()">Присоединиться</button>
             <div id="joinStatus" class="game-info"></div>
@@ -422,12 +437,71 @@
     </div>
 
     <script>
+        // ====== TELEGRAM WEB APP INTEGRATION ======
+        let tg = window.Telegram.WebApp;
+        let tgUser = null;
+
+        function initTelegram() {
+            tg.ready();
+            tg.expand();
+            
+            // Применяем тему Telegram
+            if (tg.themeParams) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#0a0a1a');
+                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#ffffff');
+            }
+            
+            // Получаем данные пользователя
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                tgUser = tg.initDataUnsafe.user;
+                document.getElementById('userInfo').innerHTML = 
+                    `👋 Привет, <strong>${tgUser.first_name}</strong>!`;
+            } else {
+                document.getElementById('userInfo').textContent = '👾 Добро пожаловать!';
+            }
+            
+            // Настраиваем главную кнопку
+            tg.MainButton.setText('Играть');
+            tg.MainButton.onClick(() => {
+                if (currentGame.gameActive && currentGame.mode) {
+                    tg.showAlert('Игра уже идет!');
+                } else {
+                    showScreen('mainMenu');
+                }
+            });
+        }
+
+        function shareGame() {
+            const url = 'https://t.me/your_bot_username';
+            const text = '🎮 Сыграем в крестики-нолики? Присоединяйся!';
+            
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`);
+            } else {
+                tg.showAlert('Поделитесь ссылкой с друзьями:\n' + url);
+            }
+        }
+
+        function shareRoom() {
+            if (!onlineGame.roomCode) return;
+            
+            const url = `https://t.me/your_bot_username?startapp=room_${onlineGame.roomCode}`;
+            const text = `🎮 Присоединяйся к игре! Код комнаты: ${onlineGame.roomCode}`;
+            
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`);
+            } else {
+                navigator.clipboard.writeText(onlineGame.roomCode);
+                tg.showAlert('Код комнаты скопирован: ' + onlineGame.roomCode);
+            }
+        }
+
         // ====== КОНФИГУРАЦИЯ ======
         const BACKEND_BASE = "https://tic-tac-toe-site.onrender.com";
 
         // ====== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ======
         let currentGame = {
-            mode: null, // 'local', 'ai', 'online'
+            mode: null,
             board: ['', '', '', '', '', '', '', '', ''],
             currentPlayer: 'X',
             gameActive: false,
@@ -439,6 +513,7 @@
             ws: null,
             roomCode: '',
             mySymbol: '',
+            myName: '',
             opponentName: '',
             connected: false
         };
@@ -449,6 +524,11 @@
                 screen.classList.remove('active');
             });
             document.getElementById(screenId).classList.add('active');
+            
+            // Вибрация при переходе
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
         }
 
         function returnToMenu() {
@@ -490,33 +570,33 @@
             
             document.getElementById('gameMode').textContent = modeText;
 
-            // Обновляем имена игроков
-            let myName = 'Игрок';
-            if (currentGame.mode === 'local') myName = 'Воин';
-            if (currentGame.mode === 'ai') myName = document.getElementById('aiName').value || 'Игрок';
-            if (currentGame.mode === 'online') myName = onlineGame.myName || 'Игрок';
+            let myName = tgUser ? tgUser.first_name : 'Игрок';
+            if (currentGame.mode === 'online') myName = onlineGame.myName || myName;
             
             document.getElementById('myNameDisplay').textContent = myName;
             document.getElementById('opponentNameDisplay').textContent = 
                 currentGame.mode === 'ai' ? '🤖 ИИ' : 
-                currentGame.mode === 'online' ? (onlineGame.opponentName || 'Боец') : 'Боец';
+                currentGame.mode === 'online' ? (onlineGame.opponentName || 'Соперник') : 'Игрок 2';
 
-            // Скрываем/показываем чат
             document.getElementById('onlineChat').style.display = currentGame.mode === 'online' ? 'block' : 'none';
         }
 
         function makeMove(index) {
             if (!currentGame.gameActive || currentGame.board[index] !== '') return;
 
+            // Вибрация при ходе
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
             if (currentGame.mode === 'online') {
-                // Онлайн-режим
                 if (!onlineGame.ws || !onlineGame.connected) {
-                    alert('Сначала подключитесь к игре');
+                    tg.showAlert('Сначала подключитесь к игре');
                     return;
                 }
                 
                 if (currentGame.currentPlayer !== onlineGame.mySymbol) {
-                    alert('Сейчас не ваш ход');
+                    tg.showAlert('Сейчас не ваш ход');
                     return;
                 }
                 
@@ -525,7 +605,6 @@
                     index: index 
                 }));
             } else {
-                // Локальный режим и ИИ
                 currentGame.board[index] = currentGame.currentPlayer;
                 updateBoard();
 
@@ -536,7 +615,6 @@
                     currentGame.currentPlayer = currentGame.currentPlayer === 'X' ? 'O' : 'X';
                     updateGameDisplay();
 
-                    // Ход ИИ
                     if (currentGame.mode === 'ai' && currentGame.currentPlayer === 'O') {
                         setTimeout(makeAIMove, 500);
                     }
@@ -581,6 +659,11 @@
         function handleGameEnd(result) {
             currentGame.gameActive = false;
 
+            // Сильная вибрация при окончании игры
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred(result.winner === 'T' ? 'warning' : 'success');
+            }
+
             if (result.winner === 'T') {
                 document.getElementById('gameStatus').textContent = 'Ничья! 🤝';
                 currentGame.scores.T++;
@@ -588,7 +671,6 @@
                 document.getElementById('gameStatus').textContent = `Победил ${result.winner === 'X' ? '❌' : '⭕'}!`;
                 currentGame.scores[result.winner]++;
                 
-                // Подсветка выигрышной линии
                 result.cells.forEach(index => {
                     document.querySelector(`.cell[data-index="${index}"]`).classList.add('winner');
                 });
@@ -619,7 +701,6 @@
             document.getElementById('scoreT').textContent = currentGame.scores.T;
         }
 
-        // ====== РЕСТАРТ ИГРЫ ======
         function restartGame() {
             if (currentGame.mode === 'online') {
                 if (onlineGame.ws && onlineGame.connected) {
@@ -632,16 +713,14 @@
 
         // ====== ОНЛАЙН-РЕЖИМ ======
         async function createRoom() {
-            const playerName = document.getElementById('createName').value || 'Игрок';
+            const playerName = tgUser ? tgUser.first_name : 'Игрок';
 
             try {
                 const response = await fetch(BACKEND_BASE + '/create', { 
                     method: 'POST'
                 });
                 
-                if (!response.ok) {
-                    throw new Error('Ошибка сервера');
-                }
+                if (!response.ok) throw new Error('Ошибка сервера');
                 
                 const data = await response.json();
                 
@@ -652,12 +731,12 @@
                 connectWebSocket(data.code, playerName);
                 
             } catch (error) {
-                alert('Ошибка создания комнаты: ' + error.message);
+                tg.showAlert('Ошибка создания комнаты: ' + error.message);
             }
         }
 
         function joinRoom() {
-            const playerName = document.getElementById('joinName').value || 'Игрок';
+            const playerName = tgUser ? tgUser.first_name : 'Игрок';
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
             
             if (!code) {
@@ -695,8 +774,6 @@
         }
 
         function handleOnlineMessage(message) {
-            console.log('Получено сообщение:', message);
-            
             switch (message.type) {
                 case 'ready':
                     currentGame.mode = 'online';
@@ -707,6 +784,10 @@
 
                     setupGame();
                     document.getElementById('onlineChat').style.display = 'block';
+                    
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
                     break;
 
                 case 'state':
@@ -727,7 +808,7 @@
                     break;
 
                 case 'error':
-                    alert(message.msg);
+                    tg.showAlert(message.msg);
                     break;
             }
         }
@@ -749,12 +830,6 @@
             chat.scrollTop = chat.scrollHeight;
         }
 
-        function copyRoomCode() {
-            navigator.clipboard.writeText(onlineGame.roomCode);
-            alert('Код скопирован!');
-        }
-
-        // ====== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ======
         function getDifficultyName(difficulty) {
             const names = { easy: 'Легкий', medium: 'Средний', hard: 'Сложный' };
             return names[difficulty] || difficulty;
@@ -762,10 +837,28 @@
 
         // ====== ИНИЦИАЛИЗАЦИЯ ИГРЫ ======
         function initGame() {
+            // Инициализация Telegram
+            initTelegram();
+            
+            // Обработка deep link (если пришли по ссылке с кодом комнаты)
+            if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                const startParam = tg.initDataUnsafe.start_param;
+                if (startParam.startsWith('room_')) {
+                    const roomCode = startParam.replace('room_', '');
+                    document.getElementById('joinCodeInput').value = roomCode;
+                    showScreen('joinRoom');
+                }
+            }
+            
             // Добавляем обработчики для клеток
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
                 cell.addEventListener('click', () => makeMove(index));
+            });
+            
+            // Обработчик Enter в чате
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
             });
             
             showScreen('mainMenu');
