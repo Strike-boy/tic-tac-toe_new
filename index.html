@@ -485,7 +485,7 @@
         function shareRoom() {
             if (!onlineGame.roomCode) return;
             
-            const url = `https://t.me/your_bot_username?startapp=room_${onlineGame.roomCode}`;
+            const url = `https://t.me/tic_tac_toe0_bot?startapp=room_${onlineGame.roomCode}`;
             const text = `🎮 Присоединяйся к игре! Код комнаты: ${onlineGame.roomCode}`;
             
             if (tg.openTelegramLink) {
